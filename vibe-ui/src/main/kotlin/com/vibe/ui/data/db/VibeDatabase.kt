@@ -102,7 +102,7 @@ private val SQL_CREATE_MARKETPLACE = """
     )
 """.trimIndent()
 
-private val MIGRATION_1_2 = Migration(1, 2) { db ->
+internal val MIGRATION_1_2 = Migration(1, 2) { db ->
     db.execSQL(SQL_CREATE_CHATS)
     db.execSQL(SQL_CREATE_MESSAGES)
     db.execSQL(SQL_CREATE_CONTACTS)
@@ -111,7 +111,7 @@ private val MIGRATION_1_2 = Migration(1, 2) { db ->
     db.execSQL(SQL_CREATE_MARKETPLACE)
 }
 
-private val MIGRATION_2_3 = Migration(2, 3) { db ->
+internal val MIGRATION_2_3 = Migration(2, 3) { db ->
     db.execSQL(SQL_CREATE_CHATS)
     db.execSQL(SQL_CREATE_MESSAGES)
     db.execSQL(SQL_CREATE_CONTACTS)
@@ -120,9 +120,7 @@ private val MIGRATION_2_3 = Migration(2, 3) { db ->
     db.execSQL(SQL_CREATE_MARKETPLACE)
 }
 
-// Version 3→4: Added `isPersonal` to chats, `lastSynced` to chats and messages.
-// Uses CREATE TABLE IF NOT EXISTS for idempotent schema updates.
-private val MIGRATION_3_4 = Migration(3, 4) { db ->
+internal val MIGRATION_3_4 = Migration(3, 4) { db ->
     db.execSQL("ALTER TABLE `chats` ADD COLUMN `isPersonal` INTEGER NOT NULL DEFAULT 1")
     db.execSQL("ALTER TABLE `chats` ADD COLUMN `lastSynced` INTEGER NOT NULL DEFAULT 0")
     db.execSQL("ALTER TABLE `messages` ADD COLUMN `lastSynced` INTEGER NOT NULL DEFAULT 0")

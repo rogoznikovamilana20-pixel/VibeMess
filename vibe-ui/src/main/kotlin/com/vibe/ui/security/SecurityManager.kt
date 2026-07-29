@@ -5,7 +5,7 @@ import android.content.SharedPreferences
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import com.vibe.common.logging.VibeLogger
-import com.vibe.ui.security.e2ee.EncryptionStatus
+import com.vibe.ui.security.EncryptionStatus
 
 /**
  * Central security manager for Vibe Messenger.
@@ -161,4 +161,11 @@ data class SecurityReport(
     val keyRotationSupported: Boolean,
     val forwardSecrecy: Boolean,
     val authenticationRequired: Boolean
+)
+
+data class EncryptionStatus(
+    val isEncrypted: Boolean,
+    val protocol: String,
+    val keyVerified: Boolean,
+    val forwardSecrecy: Boolean
 )

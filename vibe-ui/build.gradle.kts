@@ -127,4 +127,5 @@ dependencies {
     testImplementation("io.mockk:mockk:1.13.10")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
     testImplementation("org.json:json:20231013")
+    testImplementation("org.xerial:sqlite-jdbc:3.45.1.0")
 }

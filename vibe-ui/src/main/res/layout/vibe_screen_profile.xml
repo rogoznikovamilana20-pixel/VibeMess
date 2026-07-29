@@ -112,15 +112,15 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="End-to-End шифрование активно"
-                android:textColor="#4CAF50"
+                android:text="Сквозное шифрование: отключено"
+                android:textColor="#F59E0B"
                 android:textSize="15sp"
                 android:layout_marginTop="8dp" />
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Все сообщения защищены протоколом Signal"
+                android:text="Шифрование сообщений будет добавлено в одном из следующих обновлений"
                 android:textColor="#B0B0B0"
                 android:textSize="13sp"
                 android:layout_marginTop="4dp" />
