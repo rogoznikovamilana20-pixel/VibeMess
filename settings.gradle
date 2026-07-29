@@ -1,0 +1,23 @@
+// Load signing credentials from local.properties
+def localProps = new Properties()
+def localFile = new File(rootDir, 'local.properties')
+if (localFile.exists()) {
+    localProps.load(localFile.newDataInputStream())
+    ['RELEASE_STORE_PASSWORD', 'RELEASE_KEY_ALIAS', 'RELEASE_KEY_PASSWORD', 'VIBE_KEYSTORE_PATH'].each { key ->
+        if (localProps.containsKey(key)) {
+            gradle.ext[key] = localProps.getProperty(key)
+        }
+    }
+}
+
+include ':TMessagesProj'
+include ':TMessagesProj_App'
+include ':TMessagesProj_AppHuawei'
+include ':TMessagesProj_AppHockeyApp'
+include ':TMessagesProj_AppStandalone'
+include ':vibe-common'
+include ':vibe-bridge'
+include ':vibe-ui'
+
+
+include ':TMessagesProj_AppTests'

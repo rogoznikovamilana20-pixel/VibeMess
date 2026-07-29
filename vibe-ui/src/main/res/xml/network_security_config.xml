@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Disable cleartext traffic -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+
+    <!-- Certificate pinning for OpenAI API -->
+    <domain-config>
+        <domain includeSubdomains="true">api.openai.com</domain>
+        <pin-set expiration="2027-12-31">
+            <!-- Primary pins -->
+            <pin digest="SHA-256">YLh1dUR9y6Kja30RrAn7JKnbQG/uEtLMkBgFF2Fuihg=</pin>
+            <pin digest="SHA-256">sRHdihwgkaib1P1gN7akTIyKfMHBd6E7MNc63rp5hR0=</pin>
+            <!-- Backup pins from alternative chains -->
+            <pin digest="SHA-256">X4NdMunA3O1LNm8HW4M90ZdHkUL7U1zZM3LkRMLE0Zo=</pin>
+            <pin digest="SHA-256">k2v6I7xGiE6lLdfH9M0Fh8U0MmE0a0a0a0a0a0a0a0a0=</pin>
+        </pin-set>
+    </domain-config>
+</network-security-config>

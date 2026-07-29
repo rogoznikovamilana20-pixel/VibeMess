@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Vibe Splash Screen - Premium Launch Experience -->
+<!-- Per ТЗ №02: 6-phase animation, state detection, offline/error handling -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#0C081A"
+    android:fitsSystemWindows="true">
+
+    <!-- Subtle radial gradient background -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/vibe_splash_gradient" />
+
+    <!-- Glow effect - appears in Phase 2 -->
+    <View
+        android:id="@+id/glow_view"
+        android:layout_width="200dp"
+        android:layout_height="200dp"
+        android:layout_gravity="center"
+        android:background="@drawable/vibe_glow_effect"
+        android:alpha="0" />
+
+    <!-- V Logo container - appears in Phase 3 -->
+    <FrameLayout
+        android:id="@+id/logo_container"
+        android:layout_width="120dp"
+        android:layout_height="120dp"
+        android:layout_gravity="center"
+        android:layout_marginBottom="24dp">
+
+        <!-- V Logo SVG -->
+        <ImageView
+            android:id="@+id/v_logo"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:src="@drawable/ic_vibe_logo"
+            android:contentDescription="Vibe Logo"
+            android:alpha="0"
+            android:scaleX="0.8"
+            android:scaleY="0.8" />
+    </FrameLayout>
+
+    <!-- Brand name "Vibe" - appears in Phase 5 -->
+    <TextView
+        android:id="@+id/app_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="144dp"
+        android:text="Vibe"
+        android:textColor="#FFFFFF"
+        android:textSize="32sp"
+        android:textStyle="bold"
+        android:fontFamily="sans-serif-medium"
+        android:letterSpacing="0.1"
+        android:alpha="0"
+        android:translationY="10dp" />
+
+    <!-- Loading indicator - appears during slow loading -->
+    <ProgressBar
+        android:id="@+id/loading_indicator"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="200dp"
+        android:indeterminateTint="#8B5CF6"
+        android:indeterminateTintMode="src_in"
+        android:alpha="0"
+        android:visibility="gone" />
+
+    <!-- Status text for loading/error states -->
+    <TextView
+        android:id="@+id/status_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="248dp"
+        android:text=""
+        android:textColor="#A78BFA"
+        android:textSize="14sp"
+        android:alpha="0"
+        android:visibility="gone" />
+
+</FrameLayout>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Splash Screen glow effect -->
+<!-- Subtle purple glow around the V logo -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <gradient
+        android:type="radial"
+        android:gradientRadius="100"
+        android:centerX="0.5"
+        android:centerY="0.5"
+        android:startColor="#8B5CF6"
+        android:endColor="#00000000" />
+</shape>

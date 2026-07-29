@@ -1,0 +1,24 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="40dp"
+    android:viewportWidth="120"
+    android:viewportHeight="40">
+    <group>
+        <!-- Letter V -->
+        <path
+            android:fillColor="#FF212121"
+            android:pathData="M10,10 L20,30 L30,10 L26,10 L20,22 L14,10 Z" />
+        <!-- Letter I -->
+        <path
+            android:fillColor="#FF212121"
+            android:pathData="M35,10 L40,10 L40,30 L35,30 Z" />
+        <!-- Letter B -->
+        <path
+            android:fillColor="#FF212121"
+            android:pathData="M45,10 L55,10 C58,10 60,12 60,15 C60,18 58,20 55,20 L45,20 Z M45,20 L57,20 C60,20 62,22 62,25 C62,28 60,30 57,30 L45,30 Z" />
+        <!-- Letter E -->
+        <path
+            android:fillColor="#FF212121"
+            android:pathData="M65,10 L78,10 L78,14 L70,14 L70,18 L76,18 L76,22 L70,22 L70,26 L78,26 L78,30 L65,30 Z" />
+    </group>
+</vector>

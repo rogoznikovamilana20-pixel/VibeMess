@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Vibe Adaptive Icon - Foreground Layer -->
+<!-- Safe zone: 66dp of 108dp (inner 66% of the icon) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- V Logo - centered in safe zone -->
+    <group
+        android:translateX="54"
+        android:translateY="54">
+
+        <!-- Left arm of V -->
+        <path
+            android:pathData="M-20,-20 L0,20"
+            android:strokeWidth="5"
+            android:strokeColor="#A78BFA"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+
+        <!-- Right arm of V -->
+        <path
+            android:pathData="M0,20 L20,-20"
+            android:strokeWidth="5"
+            android:strokeColor="#7C3AED"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+
+        <!-- Central energy node -->
+        <path
+            android:pathData="M0,20 L0,20"
+            android:strokeWidth="2.5"
+            android:strokeColor="#8B5CF6"
+            android:strokeLineCap="round" />
+
+        <!-- Energy pulse from center -->
+        <path
+            android:pathData="M0,16 L0,24"
+            android:strokeWidth="1.5"
+            android:strokeColor="#A78BFA"
+            android:strokeAlpha="0.6"
+            android:strokeLineCap="round" />
+
+    </group>
+
+</vector>

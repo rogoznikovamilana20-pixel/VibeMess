@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Splash Screen background gradient -->
+<!-- Center slightly lighter (#17102D), edges darker (#0C081A) -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <gradient
+        android:type="radial"
+        android:gradientRadius="400"
+        android:centerX="0.5"
+        android:centerY="0.5"
+        android:startColor="#17102D"
+        android:endColor="#0C081A" />
+</shape>

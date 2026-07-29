@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Welcome Screen - Per TЗ §5 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#0C0B1A"
+    android:gravity="center"
+    android:padding="32dp">
+
+    <!-- V Logo container -->
+    <FrameLayout
+        android:id="@+id/logo_container"
+        android:layout_width="120dp"
+        android:layout_height="120dp"
+        android:layout_marginBottom="24dp">
+
+        <ImageView
+            android:id="@+id/v_logo"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:src="@drawable/ic_vibe_logo"
+            android:contentDescription="Vibe Logo" />
+    </FrameLayout>
+
+    <!-- Welcome title -->
+    <TextView
+        android:id="@+id/welcome_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Добро пожаловать в Vibe"
+        android:textColor="#FFFFFF"
+        android:textSize="28sp"
+        android:textStyle="bold"
+        android:textAlignment="center"
+        android:lineSpacingExtra="4dp"
+        android:layout_marginBottom="12dp" />
+
+    <!-- Subtitle -->
+    <TextView
+        android:id="@+id/welcome_subtitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Общение. AI. Люди.\nВсё в одном пространстве."
+        android:textColor="#B4B0C8"
+        android:textSize="16sp"
+        android:textAlignment="center"
+        android:lineSpacingExtra="4dp"
+        android:layout_marginBottom="48dp" />
+
+    <!-- Create account button -->
+    <com.vibe.ui.components.VibeButton
+        android:id="@+id/btn_create_account"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:layout_marginBottom="12dp" />
+
+    <!-- Login button -->
+    <com.vibe.ui.components.VibeButton
+        android:id="@+id/btn_login"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:layout_marginBottom="24dp" />
+
+    <!-- Terms -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Продолжая, вы соглашаетесь с\nУсловиями использования и Политикой конфиденциальности"
+        android:textColor="#7B7590"
+        android:textSize="12sp"
+        android:textAlignment="center"
+        android:lineSpacingExtra="2dp" />
+</LinearLayout>

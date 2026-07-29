@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Offline/Error State Screen -->
+<!-- Per ТЗ №02: branded error state with retry button -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:background="#0C0B1A"
+    android:padding="32dp">
+
+    <!-- V Logo -->
+    <ImageView
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        android:src="@drawable/ic_vibe_logo"
+        android:contentDescription="Vibe Logo"
+        android:layout_marginBottom="32dp" />
+
+    <!-- Error message -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Не удалось\nподключиться"
+        android:textColor="#FFFFFF"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:textAlignment="center"
+        android:lineSpacingExtra="4dp"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Subtitle -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Проверьте соединение\nс сетью"
+        android:textColor="#A8A3B8"
+        android:textSize="16sp"
+        android:textAlignment="center"
+        android:lineSpacingExtra="4dp"
+        android:layout_marginBottom="48dp" />
+
+    <!-- Retry button -->
+    <Button
+        android:id="@+id/btn_retry"
+        android:layout_width="200dp"
+        android:layout_height="56dp"
+        android:background="@drawable/vibe_bg_premium_button"
+        android:text="Повторить"
+        android:textColor="#FFFFFF"
+        android:textSize="16sp"
+        android:textStyle="bold" />
+
+</LinearLayout>
