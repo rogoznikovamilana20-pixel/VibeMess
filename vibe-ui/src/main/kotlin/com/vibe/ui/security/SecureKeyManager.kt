@@ -2,8 +2,10 @@ package com.vibe.ui.security
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.os.Build
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
+import androidx.annotation.RequiresApi
 import android.util.Base64
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
@@ -53,6 +55,7 @@ class SecureKeyManager(private val context: Context) {
     /**
      * Get or create the encryption key from Android Keystore.
      */
+    @RequiresApi(Build.VERSION_CODES.M)
     private fun getOrCreateKey(): SecretKey {
         keyStore.getEntry(KEY_ALIAS, null)?.let { entry ->
             return (entry as KeyStore.SecretKeyEntry).secretKey

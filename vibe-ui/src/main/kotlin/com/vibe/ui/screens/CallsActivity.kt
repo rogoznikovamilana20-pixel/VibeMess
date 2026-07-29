@@ -2,7 +2,7 @@ package com.vibe.ui.screens
 
 import android.os.Bundle
 import android.widget.ImageButton
-import android.widget.TextView
+import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -22,7 +22,7 @@ class CallsActivity : AppCompatActivity() {
 
         val btnBack = findViewById<ImageButton>(R.id.btn_back)
         val callsRecycler = findViewById<RecyclerView>(R.id.calls_recycler)
-        val emptyState = findViewById<TextView>(R.id.empty_state)
+        val emptyState = findViewById<View>(R.id.empty_state)
 
         // Setup calls list
         chatListAdapter = ChatListAdapter { call ->

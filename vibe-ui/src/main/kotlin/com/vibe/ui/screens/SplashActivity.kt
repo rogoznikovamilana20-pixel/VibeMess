@@ -281,6 +281,7 @@ class SplashActivity : AppCompatActivity() {
                 }
 
                 startActivity(intent)
+                @Suppress("DEPRECATION")
                 overridePendingTransition(0, 0)
                 finish()
             }

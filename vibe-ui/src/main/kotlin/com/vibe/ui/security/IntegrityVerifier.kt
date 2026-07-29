@@ -95,9 +95,11 @@ class IntegrityVerifier(private val context: Context) {
      */
     fun verifyApkIntegrity(): Boolean {
         return try {
+            @Suppress("InlinedApi")
+            val flags = PackageManager.GET_SIGNING_CERTIFICATES
             val packageInfo = context.packageManager.getPackageInfo(
                 context.packageName,
-                PackageManager.GET_SIGNING_CERTIFICATES
+                flags
             )
 
             val signatures = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {

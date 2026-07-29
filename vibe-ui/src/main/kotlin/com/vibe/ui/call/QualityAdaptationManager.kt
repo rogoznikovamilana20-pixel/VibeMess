@@ -45,7 +45,6 @@ class QualityAdaptationManager(
         var currentRttMs = 0.0
         var packetsLost = 0L
         var packetsReceived = 0L
-        var totalSentBps = 0.0
 
         for (stat in report.statsMap.values) {
             when {
@@ -55,13 +54,6 @@ class QualityAdaptationManager(
                 stat.type == "inbound-rtp" -> {
                     packetsLost = (stat.getMembers()["packetsLost"] as? Long) ?: 0
                     packetsReceived = (stat.getMembers()["packetsReceived"] as? Long) ?: 0
-                }
-                stat.type == "outbound-rtp" -> {
-                    val bytesSent = (stat.getMembers()["bytesSent"] as? Long) ?: 0
-                    val ntpTime = (stat.getMembers()["timestamp"] as? Double) ?: 0.0
-                }
-                stat.type == "transport" -> {
-                    val bytesSentTotal = (stat.getMembers()["bytesSent"] as? Long) ?: 0
                 }
             }
         }

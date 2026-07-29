@@ -63,7 +63,7 @@ fun SettingsStorageScreen(onBack: () -> Unit) {
 
     fun refreshSizes() {
         scope.launch {
-            val (db, media, cache) = withContext(Dispatchers.IO) {
+            val (dbSzVal, mediaSzVal, cacheSzVal) = withContext(Dispatchers.IO) {
                 val dbFile = context.getDatabasePath("vibe_database")
                 val dbSz = dbFile?.length() ?: 0L
                 val cacheDir = context.cacheDir
@@ -75,10 +75,10 @@ fun SettingsStorageScreen(onBack: () -> Unit) {
                 } ?: 0L
                 Triple(dbSz, mediaSz, cacheSz)
             }
-            dbSize = db
-            mediaSize = media
-            cacheSize = cache
-            totalSize = db + media + cache
+            dbSize = dbSzVal
+            mediaSize = mediaSzVal
+            cacheSize = cacheSzVal
+            totalSize = dbSzVal + mediaSzVal + cacheSzVal
         }
     }
 

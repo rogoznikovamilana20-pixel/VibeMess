@@ -1,8 +1,8 @@
 package com.vibe.ui.screens
 
 import android.os.Bundle
+import android.view.View
 import android.widget.ImageButton
-import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -28,7 +28,7 @@ class ContactsActivity : AppCompatActivity() {
 
         val btnBack = findViewById<ImageButton>(R.id.btn_back)
         val contactsRecycler = findViewById<RecyclerView>(R.id.contacts_recycler)
-        val emptyState = findViewById<TextView>(R.id.empty_state)
+        val emptyState = findViewById<View>(R.id.empty_state)
 
         // Setup contacts list
         chatListAdapter = ChatListAdapter { contact ->
@@ -71,12 +71,12 @@ class ContactsActivity : AppCompatActivity() {
 
                     if (chatContacts.isNotEmpty()) {
                         chatListAdapter.submitList(chatContacts)
-                        findViewById<TextView>(R.id.empty_state).visibility = android.view.View.GONE
-                        findViewById<RecyclerView>(R.id.contacts_recycler).visibility = android.view.View.VISIBLE
+                        findViewById<View>(R.id.empty_state).visibility = View.GONE
+                        findViewById<RecyclerView>(R.id.contacts_recycler).visibility = View.VISIBLE
                     } else {
                         chatListAdapter.submitList(emptyList())
-                        findViewById<TextView>(R.id.empty_state).visibility = android.view.View.VISIBLE
-                        findViewById<RecyclerView>(R.id.contacts_recycler).visibility = android.view.View.GONE
+                        findViewById<View>(R.id.empty_state).visibility = View.VISIBLE
+                        findViewById<RecyclerView>(R.id.contacts_recycler).visibility = View.GONE
                     }
                 }
             } catch (e: Exception) {

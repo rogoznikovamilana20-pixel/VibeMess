@@ -27,11 +27,13 @@ class MqttSignaling(
     private var client: MqttClient? = null
     private var roomId: String = ""
     private var isCaller: Boolean = false
+    private var reconnectAttempt = 0
+    private val maxReconnectDelay = 60000L
 
     private val callback = object : MqttCallback {
         override fun connectionLost(cause: Throwable?) {
             VibeLogger.w(TAG, "MQTT disconnected: ${cause?.message}")
-            reconnect()
+            reconnectWithBackoff()
         }
 
         override fun messageArrived(topic: String, message: MqttMessage) {
@@ -63,7 +65,7 @@ class MqttSignaling(
         override fun deliveryComplete(token: IMqttDeliveryToken?) {}
     }
 
-    fun connect(roomId: String, caller: Boolean, timeout: Int = 30000) {
+    fun connect(roomId: String, caller: Boolean, @Suppress("UNUSED_PARAMETER") timeout: Int = 30000) {
         this.roomId = roomId
         this.isCaller = caller
 
@@ -122,13 +124,19 @@ class MqttSignaling(
         }
     }
 
-    private fun reconnect() {
-        try {
-            client?.connect()
-            subscribeAll()
-        } catch (e: Exception) {
-            VibeLogger.e(TAG, "reconnect failed", e)
-        }
+    private fun reconnectWithBackoff() {
+        reconnectAttempt++
+        val delay = minOf((1000L shl reconnectAttempt.coerceAtMost(6)), maxReconnectDelay)
+        VibeLogger.d(TAG, "Reconnecting in ${delay}ms (attempt $reconnectAttempt)")
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+            try {
+                client?.connect()
+                subscribeAll()
+                reconnectAttempt = 0
+            } catch (e: Exception) {
+                VibeLogger.e(TAG, "reconnect failed (attempt $reconnectAttempt)", e)
+            }
+        }, delay)
     }
 
     private fun subscribeAll() {

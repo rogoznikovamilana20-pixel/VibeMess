@@ -24,10 +24,8 @@ object DeviceCapabilityDetector {
         val cpuCores = Runtime.getRuntime().availableProcessors()
         val totalRamMb = getTotalRamMb()
         val socModel = (Build.HARDWARE + " " + Build.MODEL + " " + Build.MANUFACTURER).lowercase()
-        val cpuArch = Build.SUPPORTED_ABIS.joinToString(",")
         val hasH264HighProfile = supportsCodec(MediaFormat.MIMETYPE_VIDEO_AVC, true)
         val hasH265 = supportsCodec(MediaFormat.MIMETYPE_VIDEO_HEVC, false)
-        val hasVp9 = supportsCodec(MediaFormat.MIMETYPE_VIDEO_VP9, false)
         val cameraMaxRes = getCameraMaxResolution(context)
 
         return when {

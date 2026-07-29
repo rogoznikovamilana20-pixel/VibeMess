@@ -60,6 +60,7 @@ class CallManager(private val context: Context, private val userId: String) {
 
     // TURN credentials should come from backend signaling, not be hardcoded.
     // TODO: Replace with server-provided TURN credentials via signaling.
+    // Calls behind symmetric NAT will fail without TURN servers.
     private val iceServers = mutableListOf(
         PeerConnection.IceServer.builder("stun:stun.l.google.com:19302").createIceServer(),
         PeerConnection.IceServer.builder("stun:stun1.l.google.com:19302").createIceServer(),
@@ -189,8 +190,9 @@ class CallManager(private val context: Context, private val userId: String) {
         signaling?.connect()
     }
 
-    fun createLocalStream(useVideo: Boolean): MediaStream {
-        localStream = peerConnectionFactory?.createLocalMediaStream("stream_${UUID.randomUUID()}")!!
+    fun createLocalStream(useVideo: Boolean): MediaStream? {
+        val factory = peerConnectionFactory ?: return null
+        localStream = factory.createLocalMediaStream("stream_${UUID.randomUUID()}") ?: return null
 
         val audioConstraints = MediaConstraints().apply {
             mandatory.add(MediaConstraints.KeyValuePair("googEchoCancellation", "true"))
@@ -200,29 +202,29 @@ class CallManager(private val context: Context, private val userId: String) {
             mandatory.add(MediaConstraints.KeyValuePair("googTypingNoiseDetection", "true"))
             mandatory.add(MediaConstraints.KeyValuePair("googNoiseReduction", "true"))
         }
-        localAudioSource = peerConnectionFactory?.createAudioSource(audioConstraints)
-        localAudioTrack = peerConnectionFactory?.createAudioTrack("audio_${UUID.randomUUID()}", localAudioSource)
+        localAudioSource = factory.createAudioSource(audioConstraints)
+        localAudioTrack = factory.createAudioTrack("audio_${UUID.randomUUID()}", localAudioSource)
         localAudioTrack?.setEnabled(true)
-        localStream?.addTrack(localAudioTrack!!)
+        localAudioTrack?.let { localStream?.addTrack(it) }
 
         if (useVideo) {
             videoCapturer = createVideoCapturer()
             if (videoCapturer != null) {
                 val surfaceTextureHelper = SurfaceTextureHelper.create("CaptureThread", eglBase?.eglBaseContext)
-                localVideoSource = peerConnectionFactory?.createVideoSource(false)
+                localVideoSource = factory.createVideoSource(false)
                 videoCapturer?.initialize(surfaceTextureHelper, context, localVideoSource?.capturerObserver)
                 videoCapturer?.startCapture(qualityConfig.videoWidth, qualityConfig.videoHeight, qualityConfig.videoFps)
 
-                localVideoTrack = peerConnectionFactory?.createVideoTrack("video_${UUID.randomUUID()}", localVideoSource)
+                localVideoTrack = factory.createVideoTrack("video_${UUID.randomUUID()}", localVideoSource)
                 localVideoTrack?.setEnabled(true)
-                localStream?.addTrack(localVideoTrack!!)
+                localVideoTrack?.let { localStream?.addTrack(it) }
             }
         }
 
-        return localStream!!
+        return localStream
     }
 
-    fun createPeerConnection(): PeerConnection {
+    fun createPeerConnection(): PeerConnection? {
         val config = PeerConnection.RTCConfiguration(iceServers).apply {
             sdpSemantics = PeerConnection.SdpSemantics.UNIFIED_PLAN
             continualGatheringPolicy = PeerConnection.ContinualGatheringPolicy.GATHER_CONTINUALLY
@@ -249,7 +251,7 @@ class CallManager(private val context: Context, private val userId: String) {
             )
         }
 
-        return peerConnection!!
+        return peerConnection
     }
 
     fun callUser(targetUserId: String): String {
