@@ -1,8 +1,10 @@
 package com.vibe.ui.security
 
 import android.content.Context
+import android.os.Build
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
+import androidx.annotation.RequiresApi
 import java.security.KeyStore
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
@@ -33,6 +35,7 @@ class KeyManager(private val context: Context) {
      * Generate or retrieve the E2EE key.
      * Requires user authentication (biometric/PIN) for key usage.
      */
+    @RequiresApi(Build.VERSION_CODES.M)
     fun getOrCreateKey(): SecretKey {
         val alias = getCurrentKeyAlias()
 
@@ -47,6 +50,7 @@ class KeyManager(private val context: Context) {
             KEYSTORE_PROVIDER
         )
 
+        @Suppress("DEPRECATION")
         val spec = KeyGenParameterSpec.Builder(
             alias,
             KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
@@ -88,6 +92,7 @@ class KeyManager(private val context: Context) {
     /**
      * Get the key fingerprint for verification.
      */
+    @RequiresApi(Build.VERSION_CODES.M)
     fun getKeyFingerprint(): String {
         val key = getOrCreateKey()
         val fingerprint = java.security.MessageDigest.getInstance("SHA-256")

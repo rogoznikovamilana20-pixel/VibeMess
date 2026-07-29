@@ -229,7 +229,6 @@ fun MarketplaceScreen(onBack: () -> Unit) {
 
 @Composable
 private fun ListingCard(listing: MarketplaceListingEntity) {
-    val format = remember { NumberFormat.getNumberInstance(Locale("ru")) }
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),

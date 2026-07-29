@@ -59,10 +59,10 @@ fun VibeAvatar(
         contentAlignment = Alignment.Center
     ) {
         if (hasStory) {
-            val primaryColor = MaterialTheme.colorScheme.primary
+            val storyColor = MaterialTheme.colorScheme.primary
             Canvas(modifier = Modifier.size(size + 4.dp)) {
                 drawCircle(
-                    color = primaryColor,
+                    color = storyColor,
                     radius = size.toPx() / 2 + 2.dp.toPx()
                 )
             }

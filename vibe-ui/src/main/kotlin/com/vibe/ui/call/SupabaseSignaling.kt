@@ -36,27 +36,27 @@ class SupabaseSignaling(
         .build()
 
     private val socketListener = object : WebSocketListener() {
-        override fun onOpen(ws: WebSocket, response: Response) {
+        override fun onOpen(webSocket: WebSocket, response: Response) {
             VibeLogger.d(TAG, "Supabase WS connected")
             joinUserChannel()
             startHeartbeat()
         }
 
-        override fun onMessage(ws: WebSocket, text: String) {
+        override fun onMessage(webSocket: WebSocket, text: String) {
             handleMessage(text)
         }
 
-        override fun onClosing(ws: WebSocket, code: Int, reason: String) {
+        override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
             VibeLogger.d(TAG, "Supabase WS closing: $reason")
-            ws.close(1000, null)
+            webSocket.close(1000, null)
         }
 
-        override fun onClosed(ws: WebSocket, code: Int, reason: String) {
+        override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
             VibeLogger.d(TAG, "Supabase WS closed")
             stopHeartbeat()
         }
 
-        override fun onFailure(ws: WebSocket, t: Throwable, response: Response?) {
+        override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
             VibeLogger.e(TAG, "Supabase WS failed: ${t.message}")
             stopHeartbeat()
             reconnect()
@@ -219,13 +219,19 @@ class SupabaseSignaling(
         heartbeatJob = null
     }
 
+    private var reconnectAttempt = 0
+    private var wsReconnecting = false
+
     private fun reconnect() {
-        try {
-            Thread.sleep(3000)
+        if (wsReconnecting) return
+        wsReconnecting = true
+        reconnectAttempt++
+        val delay = minOf((1000L shl reconnectAttempt.coerceAtMost(6)), 60000L)
+        VibeLogger.d(TAG, "WS reconnect in ${delay}ms (attempt $reconnectAttempt)")
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+            wsReconnecting = false
             connect()
-        } catch (e: Exception) {
-            VibeLogger.e(TAG, "reconnect failed", e)
-        }
+        }, delay)
     }
 
     companion object {

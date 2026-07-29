@@ -99,6 +99,9 @@ dependencies {
     // Accompanist
     implementation("com.google.accompanist:accompanist-systemuicontroller:0.34.0")
     
+    // Material Design Components (for FloatingActionButton etc.)
+    implementation("com.google.android.material:material:1.11.0")
+    
     // Lottie animations (Vaybik)
     implementation("com.airbnb.android:lottie-compose:6.4.0")
     

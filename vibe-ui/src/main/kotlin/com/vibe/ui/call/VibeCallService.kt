@@ -31,6 +31,7 @@ class VibeCallService : Service() {
             }
             ACTION_STOP -> {
                 disconnectSignaling()
+                @Suppress("InlinedApi")
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 stopSelf()
             }
