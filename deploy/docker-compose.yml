@@ -1,0 +1,10 @@
+version: "3.8"
+
+services:
+  coturn:
+    image: coturn/coturn:latest
+    container_name: vibe-turn
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./turnserver.conf:/etc/coturn/turnserver.conf:ro

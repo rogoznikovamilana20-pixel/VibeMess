@@ -1,0 +1,9 @@
+name: "Vibe CodeQL config"
+
+paths-ignore:
+  - "TMessagesProj/**"
+  - "TMessagesProj_App/**"
+  - "TMessagesProj_AppHuawei/**"
+  - "buildSrc/**"
+  - "**/build/**"
+  - "**/generated/**"

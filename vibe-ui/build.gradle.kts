@@ -70,7 +70,6 @@ dependencies {
     implementation(kotlin("stdlib"))
     implementation(project(":vibe-common"))
     implementation(project(":vibe-bridge"))
-    implementation(project(":TMessagesProj"))
     
     // AndroidX
     implementation("androidx.core:core-ktx:1.13.1")
@@ -79,6 +78,7 @@ dependencies {
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
     implementation("androidx.cardview:cardview:1.0.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
     implementation("androidx.activity:activity-compose:1.8.2")
     implementation("androidx.security:security-crypto:1.1.0-alpha06")

@@ -52,19 +52,15 @@ object VibeContainer {
     }
 
     fun getGateway(): ITelegramGateway {
-        return gateway ?: run {
-            VibeLogger.w(TAG, "Gateway not available, attempting fallback initialization")
-            initialize()
-            gateway ?: throw IllegalStateException("Vibe Bridge initialization failed. See logs for details.")
-        }
+        return gateway ?: throw IllegalStateException(
+            "Vibe Bridge initialization required. Call initialize() first."
+        )
     }
 
     fun getBridgeManager(): BridgeManager {
-        return bridgeManager ?: run {
-            VibeLogger.w(TAG, "BridgeManager not available, attempting fallback initialization")
-            initialize()
-            bridgeManager ?: throw IllegalStateException("Vibe Bridge initialization failed. See logs for details.")
-        }
+        return bridgeManager ?: throw IllegalStateException(
+            "Vibe Bridge initialization required. Call initialize() first."
+        )
     }
 
     fun isInitialized(): Boolean {

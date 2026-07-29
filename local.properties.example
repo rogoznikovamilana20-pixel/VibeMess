@@ -1,0 +1,10 @@
+# Vibe Messenger local configuration
+# Copy this file to local.properties and fill in your values
+
+# Supabase project for WebRTC call signaling
+# Create a project at https://supabase.com, then copy these from Project Settings → API
+SUPABASE_URL=https://your-project-id.supabase.co
+SUPABASE_ANON_KEY=your-anon-public-key
+
+# AI API key for Aurion assistant (optional)
+AI_API_KEY=your-openai-api-key

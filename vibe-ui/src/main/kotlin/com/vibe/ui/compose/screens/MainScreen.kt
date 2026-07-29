@@ -44,7 +44,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -55,19 +55,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.vibe.common.logging.VibeLogger
-import com.vibe.bridge.model.VibeChat
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.vibe.ui.compose.components.LoadingDots
 import com.vibe.ui.compose.components.VibeAvatar
 import com.vibe.ui.compose.components.VibeMode
 import com.vibe.ui.compose.components.VibeModeToggle
-import com.vibe.ui.di.VibeContainer
-import kotlinx.coroutines.Dispatchers
+import com.vibe.ui.feature.chatlist.ChatListUiState
+import com.vibe.ui.feature.chatlist.ChatListViewModel
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -96,92 +94,61 @@ fun MainScreen(
     onOpenCalls: () -> Unit = {},
     onOpenFavorites: () -> Unit = {}
 ) {
+    val viewModel: ChatListViewModel = viewModel()
+    val state by viewModel.state.collectAsState()
+
     var selectedMode by remember { mutableStateOf(VibeMode.PERSONAL) }
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
-    var chats by remember { mutableStateOf<List<ChatPreview>>(emptyList()) }
-    var userName by remember { mutableStateOf("Андрей") }
-    var userTag by remember { mutableStateOf("@andre") }
     var bridgeError by remember { mutableStateOf<String?>(null) }
     var searchQuery by remember { mutableStateOf("") }
     var showSearch by remember { mutableStateOf(false) }
     var showNewChat by remember { mutableStateOf(false) }
     var newChatName by remember { mutableStateOf("") }
-    var isLoading by remember { mutableStateOf(true) }
+
+    val dateFormat = remember { SimpleDateFormat("d MMM", Locale.getDefault()) }
+    val timeFormat = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
+    val now = remember { System.currentTimeMillis() }
+
+    val chats = when (val s = state) {
+        is ChatListUiState.Success -> {
+            s.chats.map { chat ->
+                val ts = chat.lastActivityDate
+                val timeStr = when {
+                    ts == 0L -> ""
+                    now - ts < 86400000L -> timeFormat.format(Date(ts))
+                    else -> dateFormat.format(Date(ts))
+                }
+                ChatPreview(
+                    id = chat.id,
+                    name = chat.title,
+                    lastMessage = chat.lastMessage?.text ?: chat.draftText ?: "",
+                    time = timeStr,
+                    unreadCount = chat.unreadCount,
+                    isPinned = chat.isPinned,
+                    isMuted = chat.isMuted
+                )
+            }
+        }
+        else -> emptyList()
+    }
+
+    val userName = when (val s = state) {
+        is ChatListUiState.Success -> s.userName
+        else -> ""
+    }
+
+    val userTag = when (val s = state) {
+        is ChatListUiState.Success -> s.userTag
+        else -> ""
+    }
+
+    val isLoading = state is ChatListUiState.Loading
+    val isSuccess = state is ChatListUiState.Success
 
     val filteredChats = if (searchQuery.isBlank()) chats
         else chats.filter { it.name.contains(searchQuery, ignoreCase = true) }
-
-    val demoChats = remember {
-        listOf(
-            ChatPreview(1, "Анна Смирнова", "Привет! Как дела?", "12:30", 2, isOnline = true),
-            ChatPreview(2, "Рабочий чат", "Дедлайн завтра", "11:45", 0),
-            ChatPreview(3, "Максим", "Скинь фото", "Вчера", 5, isPinned = true),
-            ChatPreview(4, "Семья", "Ужин в 19:00", "Вчера", 0, isMuted = true),
-            ChatPreview(5, "Vibe Community", "Новый релиз 2.0!", "Пн", 12, isOnline = true)
-        )
-    }
-
-    LaunchedEffect(Unit) {
-        if (VibeContainer.isInitialized()) {
-            try {
-                val gateway = withContext(Dispatchers.IO) {
-                    VibeContainer.getGateway()
-                }
-                val account = withContext(Dispatchers.IO) {
-                    gateway.accounts.getCurrentAccount()
-                }
-                val user = withContext(Dispatchers.IO) {
-                    gateway.users.getUser(account.userId)
-                }
-                user?.let {
-                    userName = it.firstName + (it.lastName?.let { " $it" } ?: "")
-                    userTag = "@${it.username ?: account.userId.toString()}"
-                }
-
-                val dateFormat = SimpleDateFormat("d MMM", Locale.getDefault())
-                val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
-                val now = System.currentTimeMillis()
-
-                scope.launch {
-                    try {
-                        gateway.chats.getActiveChats().collect { chatList ->
-                            if (chatList.isNotEmpty()) {
-                                chats = chatList.sortedByDescending { it.lastActivityDate }.map { chat ->
-                                    val ts = chat.lastActivityDate
-                                    val timeStr = when {
-                                        ts == 0L -> ""
-                                        now - ts < 86400000L -> timeFormat.format(Date(ts))
-                                        else -> dateFormat.format(Date(ts))
-                                    }
-                                    ChatPreview(
-                                        id = chat.id,
-                                        name = chat.title,
-                                        lastMessage = chat.lastMessage?.text ?: chat.draftText ?: "",
-                                        time = timeStr,
-                                        unreadCount = chat.unreadCount,
-                                        isPinned = chat.isPinned,
-                                        isMuted = chat.isMuted
-                                    )
-                                }
-                            }
-                        }
-                    } catch (e: Exception) {
-                        VibeLogger.e("MainScreen", "getActiveChats failed", e)
-                    }
-                }
-            } catch (e: Exception) {
-                VibeLogger.e("MainScreen", "Bridge init/user load failed", e)
-            }
-        }
-
-        withContext(Dispatchers.Default) { kotlinx.coroutines.delay(3000) }
-        if (chats.isEmpty()) {
-            chats = demoChats
-        }
-        isLoading = false
-    }
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -270,46 +237,69 @@ fun MainScreen(
                 }
             }
         ) { padding ->
-            if (filteredChats.isEmpty() && searchQuery.isNotBlank()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Ничего не найдено",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+            when {
+                state is ChatListUiState.Error && !isSuccess -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(padding),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = "Ошибка загрузки",
+                                color = MaterialTheme.colorScheme.error
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            TextButton(onClick = { viewModel.retry() }) {
+                                Text("Повторить")
+                            }
+                        }
+                    }
                 }
-            } else if (filteredChats.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        com.vibe.ui.compose.components.LoadingDots(color = MaterialTheme.colorScheme.primary)
-                        Spacer(modifier = Modifier.height(8.dp))
+                isLoading && filteredChats.isEmpty() -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(padding),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            LoadingDots(color = MaterialTheme.colorScheme.primary)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Загрузка...",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                    }
+                }
+                filteredChats.isEmpty() && searchQuery.isNotBlank() -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(padding),
+                        contentAlignment = Alignment.Center
+                    ) {
                         Text(
-                            text = "Загрузка...",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            style = MaterialTheme.typography.bodySmall
+                            text = "Ничего не найдено",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
-            } else {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding)
-                ) {
-                    items(filteredChats, key = { it.id }) { chat ->
-                        ChatListItem(
-                            chat = chat,
-                            onClick = { onOpenChat(chat.id, chat.name) }
-                        )
+                else -> {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(padding)
+                    ) {
+                        items(filteredChats, key = { it.id }) { chat ->
+                            ChatListItem(
+                                chat = chat,
+                                onClick = { onOpenChat(chat.id, chat.name) }
+                            )
+                        }
                     }
                 }
             }
@@ -421,7 +411,7 @@ private fun ChatListItem(
                     if (chat.isMuted) {
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "🔇",
+                            text = "\uD83D\uDD07",
                             style = MaterialTheme.typography.labelSmall,
                             modifier = Modifier.size(12.dp)
                         )
