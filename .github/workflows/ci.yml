@@ -40,7 +40,12 @@ jobs:
 
       - name: Prepare local.properties
         run: |
-          touch local.properties
+          cat > local.properties << 'PROPERTIES'
+          RELEASE_STORE_PASSWORD=vibe2026
+          RELEASE_KEY_ALIAS=vibe-release
+          RELEASE_KEY_PASSWORD=vibe2026
+          VIBE_KEYSTORE_PATH=vibe-ui/config/vibe-release.jks
+          PROPERTIES
           if [ -n "${{ secrets.SUPABASE_URL }}" ]; then
             echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" >> local.properties
           fi
@@ -83,7 +88,12 @@ jobs:
         run: chmod +x gradlew
       - name: Prepare local.properties
         run: |
-          touch local.properties
+          cat > local.properties << 'PROPERTIES'
+          RELEASE_STORE_PASSWORD=vibe2026
+          RELEASE_KEY_ALIAS=vibe-release
+          RELEASE_KEY_PASSWORD=vibe2026
+          VIBE_KEYSTORE_PATH=vibe-ui/config/vibe-release.jks
+          PROPERTIES
           if [ -n "${{ secrets.SUPABASE_URL }}" ]; then
             echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" >> local.properties
           fi
@@ -126,7 +136,12 @@ jobs:
         run: chmod +x gradlew
       - name: Prepare local.properties
         run: |
-          touch local.properties
+          cat > local.properties << 'PROPERTIES'
+          RELEASE_STORE_PASSWORD=vibe2026
+          RELEASE_KEY_ALIAS=vibe-release
+          RELEASE_KEY_PASSWORD=vibe2026
+          VIBE_KEYSTORE_PATH=vibe-ui/config/vibe-release.jks
+          PROPERTIES
           if [ -n "${{ secrets.SUPABASE_URL }}" ]; then
             echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" >> local.properties
           fi
