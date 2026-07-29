@@ -14,7 +14,7 @@ import com.vibe.ui.security.signal.KeyPair as X25519KeyPair
 /**
  * ⚠️ DISABLED — DO NOT USE.
  *
- * Previous E2EE implementation. The underlying signal/* code is mathematically broken:
+ * Previous E2EE implementation. The underlying signal code is mathematically broken:
  * - Uses secp256r1 instead of X25519
  * - Incorrect HKDF implementation
  * - Sessions never persisted

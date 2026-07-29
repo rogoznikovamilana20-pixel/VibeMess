@@ -38,3 +38,9 @@ vibe-common/build/
 vibe-bridge/build/
 app/build/
 vibe-server/
+.artifacts/
+buildSrc/build/
+build_log.txt
+*.artifact.md
+VIBE_*.md
+vibe-server-python/
