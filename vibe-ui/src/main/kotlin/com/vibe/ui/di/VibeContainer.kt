@@ -28,7 +28,7 @@ object VibeContainer {
     fun initialize(onError: ((Throwable) -> Unit)? = null): Boolean {
         if (bridgeManager != null) return true
 
-        val ctx = appContext ?: org.telegram.messenger.ApplicationLoader.applicationContext
+        val ctx = appContext ?: com.vibe.ui.VibeAppContext.getOrNull()
         if (ctx != null) {
             SparkManager.initialize(ctx)
         }

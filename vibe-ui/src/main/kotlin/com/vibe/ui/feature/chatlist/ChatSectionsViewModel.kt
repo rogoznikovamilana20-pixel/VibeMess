@@ -4,11 +4,13 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.vibe.common.logging.VibeLogger
+import com.vibe.ui.VibeAppContext
 import com.vibe.ui.ai.AurionClassifier
 import com.vibe.ui.data.db.VibeDatabase
 import com.vibe.ui.data.db.entity.ChatEntity
 import com.vibe.ui.data.repository.ChatRepository
 import com.vibe.ui.di.VibeContainer
+import com.vibe.ui.network.ServerConfig
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,7 +20,6 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Dispatchers
-import org.telegram.messenger.ApplicationLoader
 
 data class ChatChange(
     val chatId: Long,
@@ -54,7 +55,7 @@ sealed interface ChatSectionsUiState {
  */
 class ChatSectionsViewModel : ViewModel() {
 
-    private val appContext = ApplicationLoader.applicationContext
+    private val appContext = VibeAppContext.get()
     private val prefs = appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     private val repo = ChatRepository(VibeDatabase.getDatabase(appContext))
 
@@ -83,18 +84,20 @@ class ChatSectionsViewModel : ViewModel() {
                 if (!VibeContainer.isInitialized()) {
                     VibeContainer.initialize()
                 }
-                val gateway = VibeContainer.getGateway()
-                accountId = gateway.accounts.getCurrentAccount().userId
+                resolveAccountId()
 
-                viewModelScope.launch {
-                    try {
-                        val user = gateway.users.getUser(accountId)
-                        user?.let {
-                            userName = it.firstName + (it.lastName?.let { " $it" } ?: "")
-                            userTag = "@${it.username ?: accountId.toString()}"
+                if (VibeContainer.isInitialized()) {
+                    viewModelScope.launch {
+                        try {
+                            val gateway = VibeContainer.getGateway()
+                            val user = gateway.users.getUser(accountId)
+                            user?.let {
+                                userName = it.firstName + (it.lastName?.let { " $it" } ?: "")
+                                userTag = "@${it.username ?: accountId.toString()}"
+                            }
+                        } catch (e: Exception) {
+                            VibeLogger.e("ChatSectionsVM", "Failed to load user profile", e)
                         }
-                    } catch (e: Exception) {
-                        VibeLogger.e("ChatSectionsVM", "Failed to load user profile", e)
                     }
                 }
 
@@ -126,6 +129,29 @@ class ChatSectionsViewModel : ViewModel() {
                     e.message ?: "Failed to initialize chat service"
                 )
             }
+        }
+    }
+
+    /**
+     * Resolves the Room account key used to scope chats.
+     *
+     * Priority: Telegram session user id (bridge) -> local Vibe account id
+     * (Room `vibe_accounts.id`, stored by RegisterScreen in ServerConfig) ->
+     * 0 (no chats yet).
+     */
+    private fun resolveAccountId() {
+        accountId = runCatching {
+            if (VibeContainer.isInitialized()) {
+                VibeContainer.getGateway().accounts.getCurrentAccount().userId
+            } else {
+                0L
+            }
+        }.getOrDefault(0L)
+        if (accountId <= 0L) {
+            val sc = ServerConfig(appContext)
+            accountId = sc.getUserId().toLongOrNull()
+                ?: sc.getVibeId().toLongOrNull()
+                ?: 0L
         }
     }
 

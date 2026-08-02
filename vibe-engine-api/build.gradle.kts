@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.vibe.bridge"
+    namespace = "com.vibe.engine.api"
     compileSdk = 35
 
     defaultConfig {
@@ -15,7 +15,7 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    
+
     kotlinOptions {
         jvmTarget = "17"
     }
@@ -35,13 +35,7 @@ configurations.all {
 
 dependencies {
     implementation(kotlin("stdlib"))
-    implementation(project(":vibe-common"))
-    api(project(":vibe-engine-api"))
-    api(project(":TMessagesProj"))
-    implementation("androidx.core:core:1.13.1")
-    implementation("androidx.collection:collection-ktx:1.4.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
-    
+    api("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+
     testImplementation("junit:junit:4.13.2")
-    testImplementation("io.mockk:mockk:1.13.10")
 }

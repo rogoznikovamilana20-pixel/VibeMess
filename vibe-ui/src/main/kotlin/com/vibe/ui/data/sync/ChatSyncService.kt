@@ -2,6 +2,7 @@ package com.vibe.ui.data.sync
 
 import com.vibe.bridge.model.VibeChat
 import com.vibe.common.logging.VibeLogger
+import com.vibe.ui.VibeAppContext
 import com.vibe.ui.data.db.VibeDatabase
 import com.vibe.ui.data.db.entity.ChatEntity
 import com.vibe.ui.data.repository.ChatRepository
@@ -14,7 +15,6 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
-import org.telegram.messenger.ApplicationLoader
 
 /**
  * Background writer that mirrors the Telegram chat list into Room.
@@ -42,8 +42,14 @@ object ChatSyncService {
                     VibeContainer.initialize()
                 }
                 val gateway = VibeContainer.getGateway()
-                val accountId = gateway.accounts.getCurrentAccount().userId
-                val repo = ChatRepository(VibeDatabase.getDatabase(ApplicationLoader.applicationContext))
+                val accountId = runCatching {
+                    gateway.accounts.getCurrentAccount().userId
+                }.getOrDefault(0L)
+                if (accountId <= 0L) {
+                    VibeLogger.i(TAG, "No Telegram session — chat sync skipped")
+                    return@launch
+                }
+                val repo = ChatRepository(VibeDatabase.getDatabase(VibeAppContext.get()))
 
                 gateway.chats.getActiveChats()
                     .catch { e ->

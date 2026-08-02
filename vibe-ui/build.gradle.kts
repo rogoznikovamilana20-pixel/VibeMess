@@ -87,6 +87,7 @@ configurations.all {
 dependencies {
     implementation(kotlin("stdlib"))
     implementation(project(":vibe-common"))
+    implementation(project(":vibe-engine-api"))
     implementation(project(":vibe-bridge"))
     
     // AndroidX

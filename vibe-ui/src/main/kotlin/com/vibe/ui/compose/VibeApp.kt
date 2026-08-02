@@ -98,7 +98,7 @@ fun VibeApp() {
         VibeContainer.initialize()
     }
 
-    val isAuthenticated = serverConfig.isAuthenticated() || telegramUserId != null
+    val isAuthenticated = serverConfig.isAuthenticated()
     val tourCompleted = serverConfig.isTourCompleted()
     val startScreen = when {
         !isAuthenticated -> Screen.WELCOME
@@ -147,11 +147,13 @@ fun VibeApp() {
                     bridgeReady = true
                     VibeCallService.start(context.applicationContext, tid)
                 } else {
-                    // No real Telegram session — the stored "authenticated" flag is stale.
-                    telegramUserId = null
-                    serverConfig.setAuthenticated(false)
-                    if (navState.currentScreen == Screen.MAIN) {
-                        navState.replaceWith(Screen.WELCOME)
+                    // No real Telegram session — the local Vibe account is the identity.
+                    // Keep the stored authentication; never kick the user out of MAIN.
+                    bridgeReady = true
+                    val localId = serverConfig.getUserId().ifBlank { serverConfig.getVibeId() }
+                    if (localId.isNotBlank()) {
+                        CallUtils.setUserId(context, localId)
+                        VibeCallService.start(context.applicationContext, localId)
                     }
                 }
             } catch (e: Exception) {
@@ -162,22 +164,21 @@ fun VibeApp() {
     }
 
     fun resolveUserId(): String {
+        val local = serverConfig.getUserId().ifBlank { serverConfig.getVibeId() }
         return try {
             if (VibeContainer.isInitialized()) {
                 val account = VibeContainer.getGateway().accounts.getCurrentAccount()
                 if (account.userId > 0L) {
                     val uid = account.userId.toString()
                     CallUtils.setUserId(context, uid)
-                    uid
-                } else {
-                    CallUtils.getUserIdFromPrefs(context).ifEmpty { CallUtils.getUserId(context) }
+                    return uid
                 }
-            } else {
-                CallUtils.getUserIdFromPrefs(context).ifEmpty { CallUtils.getUserId(context) }
             }
+            if (local.isNotBlank()) local
+            else CallUtils.getUserIdFromPrefs(context).ifEmpty { CallUtils.getUserId(context) }
         } catch (e: Exception) {
             android.util.Log.w("VibeApp", "resolveUserId failed", e)
-            CallUtils.getUserIdFromPrefs(context).ifEmpty { CallUtils.getUserId(context) }
+            local.ifBlank { CallUtils.getUserIdFromPrefs(context).ifEmpty { CallUtils.getUserId(context) } }
         }
     }
 

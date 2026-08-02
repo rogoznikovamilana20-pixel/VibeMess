@@ -17,6 +17,8 @@ class VibeActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         try {
+            VibeAppContext.init(this)
+            VibeContainer.bindContext(this)
             // Full Telegram core initialization (configs, accounts, services) —
             // exactly what LaunchActivity does in stock Telegram. Idempotent.
             ApplicationLoader.postInitApplication()

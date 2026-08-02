@@ -37,6 +37,7 @@ TMessagesProj_AppHuawei/build/
 vibe-ui/build/
 vibe-common/build/
 vibe-bridge/build/
+vibe-engine-api/build/
 app/build/
 vibe-server/
 .artifacts/
