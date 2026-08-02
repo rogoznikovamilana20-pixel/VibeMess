@@ -7,15 +7,21 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
@@ -41,9 +47,23 @@ fun SettingsCallsScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     val serverConfig = remember { ServerConfig(context) }
 
-    val savedNoise = serverConfig.getAiProvider().let { false }
-    var noiseCancellation by remember { mutableStateOf(savedNoise) }
-    var videoCallQuality by remember { mutableStateOf(true) }
+    var noiseCancellation by remember { mutableStateOf(serverConfig.isNoiseCancellation()) }
+    var videoCallQuality by remember { mutableStateOf(serverConfig.isVideoHighQuality()) }
+    var signalingUrl by remember { mutableStateOf(serverConfig.getSignalingUrl()) }
+    var signalingAnonKey by remember { mutableStateOf(serverConfig.getSignalingAnonKey()) }
+    var turnServer by remember { mutableStateOf(serverConfig.getTurnServerUrl()) }
+    var turnUsername by remember { mutableStateOf(serverConfig.getTurnUsername()) }
+    var turnPassword by remember { mutableStateOf(serverConfig.getTurnPassword()) }
+    var saved by remember { mutableStateOf(false) }
+
+    fun saveServerSettings() {
+        serverConfig.setSignalingUrl(signalingUrl.trim())
+        serverConfig.setSignalingAnonKey(signalingAnonKey.trim())
+        serverConfig.setTurnServerUrl(turnServer.trim())
+        serverConfig.setTurnUsername(turnUsername.trim())
+        serverConfig.setTurnPassword(turnPassword.trim())
+        saved = true
+    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -77,8 +97,129 @@ fun SettingsCallsScreen(onBack: () -> Unit) {
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            CallsToggle("Шумоподавление", noiseCancellation, { noiseCancellation = it })
-            CallsToggle("Высокое качество видео", videoCallQuality, { videoCallQuality = it })
+            CallsToggle("Шумоподавление", noiseCancellation, {
+                noiseCancellation = it
+                serverConfig.setNoiseCancellation(it)
+            })
+            CallsToggle("Высокое качество видео", videoCallQuality, {
+                videoCallQuality = it
+                serverConfig.setVideoHighQuality(it)
+            })
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        "Сервер сигналинга (Supabase)",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        "Если поля пустые — используется значение из сборки. Оставьте пустым, если не знаете, что указать.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = signalingUrl,
+                        onValueChange = {
+                            signalingUrl = it
+                            saved = false
+                        },
+                        label = { Text("URL проекта (https://xxx.supabase.co)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = signalingAnonKey,
+                        onValueChange = {
+                            signalingAnonKey = it
+                            saved = false
+                        },
+                        label = { Text("Anon key") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        "TURN сервер",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        "Нужен для соединения за NAT (symmetric). Публичный TURN (openrelayproject) уже включён по умолчанию — поля можно оставить пустыми. Для продакшена: Cloudflare Calls (бесплатно до 1 ТБ/мес, anycast). Формат turn:host:3478.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = turnServer,
+                        onValueChange = {
+                            turnServer = it
+                            saved = false
+                        },
+                        label = { Text("turn:host:3478") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = turnUsername,
+                        onValueChange = {
+                            turnUsername = it
+                            saved = false
+                        },
+                        label = { Text("Рмя пользователя") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = turnPassword,
+                        onValueChange = {
+                            turnPassword = it
+                            saved = false
+                        },
+                        label = { Text("Пароль") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Button(
+                        onClick = { saveServerSettings() },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF8B5CF6)
+                        )
+                    ) {
+                        Text(if (saved) "Сохранено ✓" else "Сохранить")
+                    }
+                }
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -161,7 +302,7 @@ private fun CallsToggle(label: String, checked: Boolean, onCheckedChange: (Boole
                 checked = checked,
                 onCheckedChange = onCheckedChange,
                 colors = SwitchDefaults.colors(
-                    checkedTrackColor = Color(0xFF8D2BFA)
+                    checkedTrackColor = Color(0xFF8B5CF6)
                 )
             )
         }

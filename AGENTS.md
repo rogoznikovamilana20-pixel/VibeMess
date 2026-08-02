@@ -47,7 +47,7 @@ RELEASE_KEY_PASSWORD=vibe2026
 RELEASE_KEY_ALIAS=vibe-release
 RELEASE_STORE_PASSWORD=vibe2026
 VIBE_KEYSTORE_PATH=vibe-ui/config/vibe-release.jks
-AI_API_KEY=your-openrouter-api-key
+AI_API_KEY=your-zvenoai-api-key
 ```
 
 ## CI (.github/workflows/ci.yml)

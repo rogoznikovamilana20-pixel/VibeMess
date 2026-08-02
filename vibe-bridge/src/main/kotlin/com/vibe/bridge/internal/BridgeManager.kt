@@ -8,6 +8,7 @@ import com.vibe.bridge.internal.contact.TelegramContactService
 import com.vibe.bridge.internal.media.TelegramMediaService
 import com.vibe.bridge.internal.message.TelegramMessageService
 import com.vibe.bridge.internal.notification.TelegramNotificationService
+import com.vibe.bridge.internal.search.TelegramSearchService
 import com.vibe.bridge.internal.telegram.TelegramCoreAdapter
 import com.vibe.bridge.internal.user.TelegramUserService
 import com.vibe.bridge.mapper.ChatMapper
@@ -44,6 +45,7 @@ class BridgeManager {
     private val userService = TelegramUserService()
     private val contactService = TelegramContactService()
     private val mediaService = TelegramMediaService()
+    private val searchService = TelegramSearchService(messageMapper)
 
     /**
      * The single gateway instance for accessing Telegram data.
@@ -55,7 +57,8 @@ class BridgeManager {
         messageService,
         userService,
         contactService,
-        mediaService
+        mediaService,
+        searchService
     )
 
     /**
@@ -116,9 +119,9 @@ class BridgeManager {
             }
             _isInitialized = true
             Result.success(Unit)
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             notifyError(e)
-            Result.failure(e)
+            Result.failure(e as? Exception ?: RuntimeException(e))
         }
     }
 

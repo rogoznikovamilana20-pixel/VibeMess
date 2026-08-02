@@ -39,7 +39,7 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
 
-        coreLibraryDesugaringEnabled true
+        coreLibraryDesugaringEnabled = true
     }
 
     signingConfigs {
@@ -77,11 +77,11 @@ android {
         debug {
             debuggable true
             jniDebuggable true
-            signingConfig signingConfigs.debug
+            signingConfig = signingConfigs.debug
             applicationIdSuffix ".beta"
             minifyEnabled false
-            shrinkResources false
-            multiDexEnabled true
+            shrinkResources = false
+            multiDexEnabled = true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), '../TMessagesProj/proguard-rules.pro', '../TMessagesProj/proguard-rules-beta.pro'
             ndk.debugSymbolLevel = 'FULL'
         }
@@ -89,11 +89,11 @@ android {
         standalone {
             debuggable false
             jniDebuggable false
-            signingConfig signingConfigs.release
+            signingConfig = signingConfigs.release
             applicationIdSuffix ".web"
             minifyEnabled true
-            shrinkResources false
-            multiDexEnabled true
+            shrinkResources = false
+            multiDexEnabled = true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), '../TMessagesProj/proguard-rules.pro'
             ndk.debugSymbolLevel = 'FULL'
         }
@@ -101,11 +101,11 @@ android {
         release {
             debuggable false
             jniDebuggable false
-            signingConfig signingConfigs.release
-            minifyEnabled false
-            shrinkResources false
-            multiDexEnabled true
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), '../TMessagesProj/proguard-rules.pro'
+            signingConfig = signingConfigs.release
+            minifyEnabled true
+            shrinkResources = false
+            multiDexEnabled = true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), '../TMessagesProj/proguard-rules.pro', '../vibe-ui/proguard-rules.pro'
             ndk.debugSymbolLevel = 'FULL'
         }
     }
@@ -190,15 +190,15 @@ android {
         minSdkVersion 21
         targetSdkVersion 35
         versionName APP_VERSION_NAME
-        ndkVersion "27.2.12479018"
+        ndkVersion = "27.2.12479018"
 
-        multiDexEnabled true
+        multiDexEnabled = true
 
         vectorDrawables.generatedDensities = ['mdpi', 'hdpi', 'xhdpi', 'xxhdpi']
 
         externalNativeBuild {
             cmake {
-                version '3.10.2'
+                version = '3.10.2'
                 arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-21' // , '-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON'
             }
         }
@@ -207,11 +207,14 @@ android {
     buildFeatures {
         buildConfig = true
     }
-    namespace 'org.telegram.messenger.regular'
+    namespace = 'org.telegram.messenger.regular'
 
-    lintOptions {
-        checkReleaseBuilds false
+    lint {
+        checkReleaseBuilds = false
+        baseline = file("lint-baseline.xml")
+        disable "UseTomlInstead"
     }
 }
 
 apply plugin: 'com.google.gms.google-services'
+apply plugin: 'com.google.firebase.crashlytics'

@@ -58,14 +58,41 @@ class CallManager(private val context: Context, private val userId: String) {
 
     private val qualityConfig = DeviceCapabilityDetector.detect(context)
 
-    // TURN credentials should come from backend signaling, not be hardcoded.
-    // TODO: Replace with server-provided TURN credentials via signaling.
-    // Calls behind symmetric NAT will fail without TURN servers.
     private val iceServers = mutableListOf(
         PeerConnection.IceServer.builder("stun:stun.l.google.com:19302").createIceServer(),
         PeerConnection.IceServer.builder("stun:stun1.l.google.com:19302").createIceServer(),
         PeerConnection.IceServer.builder("stun:stun2.l.google.com:19302").createIceServer()
-    )
+    ).apply {
+        val serverConfig = com.vibe.ui.network.ServerConfig(context)
+        val turnUrl = serverConfig.getTurnServerUrl()
+        if (turnUrl.isNotBlank()) {
+            val username = serverConfig.getTurnUsername()
+            val password = serverConfig.getTurnPassword()
+            add(PeerConnection.IceServer.builder(turnUrl).setUsername(username).setPassword(password).createIceServer())
+        }
+        // Public TURN fallback (openrelayproject, без регистрации) — гарантирует работу
+        // за симметричным NAT (мобильные сети и т.п.), когда P2P через STUN невозможен.
+        add(
+            PeerConnection.IceServer.builder("turn:openrelay.metered.ca:80")
+                .setUsername("openrelayproject")
+                .setPassword("openrelayproject")
+                .createIceServer()
+        )
+    }
+
+    /**
+     * Adds short-lived TURN credentials (fetched from vibe-server) before the
+     * peer connection is created. Called by the UI prior to callUser/acceptCall.
+     */
+    fun addTurnCredentials(url: String, username: String, password: String) {
+        if (url.isBlank()) return
+        iceServers.add(
+            PeerConnection.IceServer.builder(url)
+                .setUsername(username)
+                .setPassword(password)
+                .createIceServer()
+        )
+    }
 
     private val pcObserver = object : PeerConnection.Observer {
         override fun onIceCandidate(candidate: IceCandidate) {
@@ -208,16 +235,23 @@ class CallManager(private val context: Context, private val userId: String) {
         localAudioTrack?.let { localStream?.addTrack(it) }
 
         if (useVideo) {
-            videoCapturer = createVideoCapturer()
-            if (videoCapturer != null) {
-                val surfaceTextureHelper = SurfaceTextureHelper.create("CaptureThread", eglBase?.eglBaseContext)
-                localVideoSource = factory.createVideoSource(false)
-                videoCapturer?.initialize(surfaceTextureHelper, context, localVideoSource?.capturerObserver)
-                videoCapturer?.startCapture(qualityConfig.videoWidth, qualityConfig.videoHeight, qualityConfig.videoFps)
+            try {
+                videoCapturer = createVideoCapturer()
+                if (videoCapturer != null) {
+                    val surfaceTextureHelper = SurfaceTextureHelper.create("CaptureThread", eglBase?.eglBaseContext)
+                    localVideoSource = factory.createVideoSource(false)
+                    videoCapturer?.initialize(surfaceTextureHelper, context, localVideoSource?.capturerObserver)
+                    videoCapturer?.startCapture(qualityConfig.videoWidth, qualityConfig.videoHeight, qualityConfig.videoFps)
 
-                localVideoTrack = factory.createVideoTrack("video_${UUID.randomUUID()}", localVideoSource)
-                localVideoTrack?.setEnabled(true)
-                localVideoTrack?.let { localStream?.addTrack(it) }
+                    localVideoTrack = factory.createVideoTrack("video_${UUID.randomUUID()}", localVideoSource)
+                    localVideoTrack?.setEnabled(true)
+                    localVideoTrack?.let { localStream?.addTrack(it) }
+                }
+            } catch (e: Exception) {
+                VibeLogger.e("CallManager", "Video capture init failed", e)
+                videoCapturer = null
+                localVideoTrack = null
+                localVideoSource = null
             }
         }
 
@@ -255,18 +289,29 @@ class CallManager(private val context: Context, private val userId: String) {
     }
 
     fun callUser(targetUserId: String): String {
-        state = CallState.CONNECTING
-        createLocalStream(useVideo = true)
-        createPeerConnection()
-        return signaling?.callUser(targetUserId) ?: ""
+        return try {
+            state = CallState.CONNECTING
+            createLocalStream(useVideo = true)
+            createPeerConnection()
+            signaling?.callUser(targetUserId) ?: ""
+        } catch (e: Exception) {
+            VibeLogger.e("CallManager", "callUser failed", e)
+            state = CallState.FAILED
+            ""
+        }
     }
 
     fun acceptCall(roomId: String, callerId: String = currentCallerId) {
-        state = CallState.CONNECTING
-        currentCallerId = callerId
-        createLocalStream(useVideo = true)
-        createPeerConnection()
-        signaling?.acceptCall(callerId, roomId)
+        try {
+            state = CallState.CONNECTING
+            currentCallerId = callerId
+            createLocalStream(useVideo = true)
+            createPeerConnection()
+            signaling?.acceptCall(callerId, roomId)
+        } catch (e: Exception) {
+            VibeLogger.e("CallManager", "acceptCall failed", e)
+            state = CallState.FAILED
+        }
     }
 
     fun setRemoteSdp(sdp: SessionDescription) {
@@ -282,18 +327,26 @@ class CallManager(private val context: Context, private val userId: String) {
     }
 
     fun toggleVideo(enabled: Boolean) {
-        videoCapturer?.let {
-            if (enabled) {
-                it.startCapture(qualityConfig.videoWidth, qualityConfig.videoHeight, qualityConfig.videoFps)
-            } else {
-                it.stopCapture()
+        try {
+            videoCapturer?.let {
+                if (enabled) {
+                    it.startCapture(qualityConfig.videoWidth, qualityConfig.videoHeight, qualityConfig.videoFps)
+                } else {
+                    it.stopCapture()
+                }
             }
+            localVideoTrack?.setEnabled(enabled)
+        } catch (e: Exception) {
+            VibeLogger.e("CallManager", "toggleVideo failed", e)
         }
-        localVideoTrack?.setEnabled(enabled)
     }
 
     fun switchCamera() {
-        (videoCapturer as? CameraVideoCapturer)?.switchCamera(null)
+        try {
+            (videoCapturer as? CameraVideoCapturer)?.switchCamera(null)
+        } catch (e: Exception) {
+            VibeLogger.e("CallManager", "switchCamera failed", e)
+        }
     }
 
     fun endCall() {

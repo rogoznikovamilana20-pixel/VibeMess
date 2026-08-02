@@ -55,28 +55,30 @@ class SecureKeyManager(private val context: Context) {
     /**
      * Get or create the encryption key from Android Keystore.
      */
-    @RequiresApi(Build.VERSION_CODES.M)
-    private fun getOrCreateKey(): SecretKey {
-        keyStore.getEntry(KEY_ALIAS, null)?.let { entry ->
-            return (entry as KeyStore.SecretKeyEntry).secretKey
+    private fun getOrCreateKey(): SecretKey? {
+        return try {
+            keyStore.getEntry(KEY_ALIAS, null)?.let { entry ->
+                (entry as? KeyStore.SecretKeyEntry)?.secretKey
+            } ?: run {
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return null
+                val keyGenerator = KeyGenerator.getInstance(
+                    KeyProperties.KEY_ALGORITHM_AES,
+                    KEYSTORE_PROVIDER
+                )
+                val spec = KeyGenParameterSpec.Builder(
+                    KEY_ALIAS,
+                    KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
+                )
+                    .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+                    .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+                    .setKeySize(256)
+                    .build()
+                keyGenerator.init(spec)
+                keyGenerator.generateKey()
+            }
+        } catch (_: Exception) {
+            null
         }
-
-        val keyGenerator = KeyGenerator.getInstance(
-            KeyProperties.KEY_ALGORITHM_AES,
-            KEYSTORE_PROVIDER
-        )
-
-        val spec = KeyGenParameterSpec.Builder(
-            KEY_ALIAS,
-            KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
-        )
-            .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
-            .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
-            .setKeySize(256)
-            .build()
-
-        keyGenerator.init(spec)
-        return keyGenerator.generateKey()
     }
 
     /**

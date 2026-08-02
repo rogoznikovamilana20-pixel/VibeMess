@@ -6,55 +6,78 @@
 
 ## 1. ЦВЕТОВАЯ ПАЛИТРА
 
-### Основные цвета
-
-| Название | HEX | RGB | Назначение |
-|----------|-----|-----|------------|
-| **Vibe Purple** | `#8B5CF6` | 139, 92, 246 | Основной акцент |
-| **Vibe Purple Dark** | `#7C3AED` | 124, 58, 237 | Hover states |
-| **Vibe Purple Light** | `#A78BFA` | 167, 139, 250 | Иконки, links |
-| **Vibe Purple Glow** | `#C4B5FD` | 196, 181, 253 | Свечения |
-
-### Фоны
+### Двойной фиолетовый (по ролям)
 
 | Название | HEX | Назначение |
 |----------|-----|------------|
-| **Background Deep** | `#0C081A` | Основной фон |
-| **Background** | `#0F0D1A` | Фон экранов |
-| **Surface** | `#1A1730` | Карточки |
-| **Surface Variant** | `#231F3D` | Hover карточки |
-| **Surface Highlight** | `#2D2952` | Активные элементы |
+| **Primary (системный)** | `#8B5CF6` | Кнопки, тумблеры, табы, FAB, прогресс, сплэш |
+| **Vivid Violet (бренд)** | `#8D2BFA` | Режим «Личное», AI-иконки/акценты, ссылки, мелкий цветной текст (AA 5.5:1) |
+| **Primary Light** | `#B06BFF` | Градиенты, onPrimaryContainer |
+| **Pressed** | `#7C3AED` | Нажатие |
+| **Variant** | `#6B1FCC` | Тёмные варианты фиолетового |
+
+### Фиолетовые подложки
+
+| Название | HEX | Назначение |
+|----------|-----|------------|
+| **Purple Surface** | `#1A0F2E` | AI-карточка (низ градиента), primaryContainer |
+| **Purple Deep** | `#2A1A4A` | AI-карточка (верх градиента `#2A1A4A→#1A0F2E`) |
+
+### Синие (оба остаются)
+
+| Название | HEX | Назначение |
+|----------|-----|------------|
+| **Work Blue** | `#10B6FA` | Режим «Работа», неон-акценты |
+| **Script Bot Blue** | `#0EA5E9` | Скрипт-боты, аватарки |
+
+### Фоны — тёмная тема
+
+| Название | HEX | Назначение |
+|----------|-----|------------|
+| **Background Dark** | `#0C0B1A` | Основной фон |
+| **Background Alt Dark** | `#100E1F` | Альтернативный фон |
+| **Surface Dark** | `#161429` | Карточки |
+| **Surface Variant Dark** | `#1E1B33` | Поля, подложки |
+| **Surface Highlight Dark** | `#2A2645` | Активные элементы |
+| **Surface Elevated Dark** | `#1F1C38` | Поднятые карточки |
+
+### Фоны — светлая тема
+
+| Название | HEX | Назначение |
+|----------|-----|------------|
+| **Background Light** | `#F8F7FF` | Основной фон |
+| **Surface Variant Light** | `#F3F1FF` | Поля |
+| **Surface Highlight Light** | `#EBE6FF` | Активные элементы |
+| **Divider Light** | `#E6E1F0` | Разделители |
+| **Background Alt Light** | `#F0EEFF` | Альтернативный фон |
 
 ### Текст
 
 | Название | HEX | Назначение |
 |----------|-----|------------|
-| **Text Primary** | `#FFFFFF` | Основной текст |
-| **Text Secondary** | `#B4B0C8` | Вторичный текст |
-| **Text Tertiary** | `#7B7590` | Подсказки |
-| **Text Disabled** | `#4A4560` | Отключённый |
+| **Text Primary Dark** | `#FFFFFF` | Основной текст (тёмная тема) |
+| **Text Secondary Dark** | `#A8A3B8` | Вторичный текст (тёмная тема) |
+| **Text Tertiary Dark** | `#6B6580` | Подсказки (тёмная тема) |
+| **Text Primary Light** | `#1C1B1F` | Основной текст (светлая тема) |
+| **Text Secondary Light** | `#49454F` | Вторичный текст (светлая тема) |
+| **Text Tertiary Light** | `#7A7585` | Подсказки (светлая тема) |
 
-### Статусные
+### Семантика
 
 | Название | HEX | Назначение |
 |----------|-----|------------|
 | **Success** | `#4ADE80` | Успех, онлайн |
-| **Warning** | `#FBBF24` | Предупреждение |
-| **Error** | `#F87171` | Ошибка |
-| **Info** | `#60A5FA` | Информация |
+| **Warning** | `#F59E0B` | Предупреждение |
+| **Warning Glow** | `#FDE68A` | Свечение «Искры» |
+| **Error** | `#EF4444` | Ошибка |
+| **Teal** | `#14B8A6` | Информация/тур-акценты |
 
-### Градиенты
+### Контекстные разделы
 
-```css
-/* Основной градиент Vibe */
-background: linear-gradient(135deg, #A78BFA 0%, #8B5CF6 50%, #7C3AED 100%);
-
-/* Glow эффект */
-background: radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, transparent 70%);
-
-/* Фон карточки */
-background: linear-gradient(180deg, #1A1730 0%, #16142A 100%);
-```
+- **Личное** = `#8D2BFA` (фиолетовый), **Работа** = `#10B6FA` (синий)
+- Исходящий пузырь: сплошной `#8D2BFA`
+- AI-карточка Aurion: градиент `#2A1A4A → #1A0F2E`, бейдж/текст `#8D2BFA`
+- Стилевые превью в настройках темы остаются именованными (`#121212/#1E1E1E/#FFF8E1/#22C55E/#F97316`)
 
 ---
 
@@ -215,23 +238,28 @@ background: linear-gradient(180deg, #1A1730 0%, #16142A 100%);
 
 ```kotlin
 object DarkTheme {
-    val Background = Color.parseColor("#0C081A")
-    val Surface = Color.parseColor("#1A1730")
-    val Primary = Color.parseColor("#8B5CF6")
-    val TextPrimary = Color.WHITE
-    val TextSecondary = Color.parseColor("#B4B0C8")
+    val Background = Color(0xFF0C0B1A)
+    val Surface = Color(0xFF161429)
+    val SurfaceVariant = Color(0xFF1E1B33)
+    val Primary = Color(0xFF8B5CF6)      // системный (контролы)
+    val Vivid = Color(0xFF8D2BFA)        // бренд (акценты, AI)
+    val TextPrimary = Color(0xFFFFFFFF)
+    val TextSecondary = Color(0xFFA8A3B8)
+    val TextTertiary = Color(0xFF6B6580)
 }
 ```
 
-### Светлая (будущее)
+### Светлая
 
 ```kotlin
 object LightTheme {
-    val Background = Color.parseColor("#F8F7FF")
-    val Surface = Color.WHITE
-    val Primary = Color.parseColor("#8B5CF6")
-    val TextPrimary = Color.parseColor("#1A1730")
-    val TextSecondary = Color.parseColor("#6B6580")
+    val Background = Color(0xFFF8F7FF)
+    val Surface = Color(0xFFFFFFFF)
+    val SurfaceVariant = Color(0xFFF3F1FF)
+    val SurfaceHighlight = Color(0xFFEBE6FF)
+    val Primary = Color(0xFF8B5CF6)
+    val TextPrimary = Color(0xFF1C1B1F)
+    val TextSecondary = Color(0xFF49454F)
 }
 ```
 

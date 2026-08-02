@@ -28,6 +28,7 @@ local.properties
 *.bks
 /build/
 TMessagesProj/.cxx/
+tools/sirin/.venv/
 TMessagesProj/build/
 **/wycheproof_testvectors/
 **/crypto_test_data.cc

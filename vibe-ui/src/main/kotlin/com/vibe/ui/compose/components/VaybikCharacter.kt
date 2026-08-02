@@ -142,7 +142,7 @@ fun VaybikCharacter(
             if (mood == VaybikMood.CELEBRATE) {
                 val sparkleAlpha = (0.5f + floatAnim * 0.5f)
                 drawCircle(Color(0xFFF59E0B).copy(alpha = sparkleAlpha), r * 0.1f, Offset(cx - r * 0.7f, cy - r * 0.8f))
-                drawCircle(Color(0xFFEC4899).copy(alpha = sparkleAlpha), r * 0.08f, Offset(cx + r * 0.8f, cy - r * 0.6f))
+                drawCircle(Color(0xFF8D2BFA).copy(alpha = sparkleAlpha), r * 0.08f, Offset(cx + r * 0.8f, cy - r * 0.6f))
                 drawCircle(Color(0xFF10B6FA).copy(alpha = sparkleAlpha), r * 0.12f, Offset(cx + r * 0.1f, cy - r * 1.0f))
             }
         }

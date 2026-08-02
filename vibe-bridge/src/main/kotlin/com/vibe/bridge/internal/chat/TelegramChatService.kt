@@ -13,8 +13,13 @@ import kotlinx.coroutines.flow.*
 import org.telegram.messenger.MessagesController
 import org.telegram.messenger.NotificationCenter
 import org.telegram.messenger.UserConfig
+import org.telegram.tgnet.ConnectionsManager
+import org.telegram.tgnet.TLRPC
 import androidx.collection.LongSparseArray
+import android.os.Looper
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 /**
  * Implementation of [IChatService] using Telegram internal classes.
@@ -23,7 +28,11 @@ internal class TelegramChatService(
     private val chatMapper: ChatMapper
 ) : IChatService, NotificationCenter.NotificationCenterDelegate {
 
-    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val serviceScope = CoroutineScope(
+        SupervisorJob() + Dispatchers.Default + CoroutineExceptionHandler { _, e ->
+            VibeLogger.e("TelegramChatService", "background coroutine crashed", e)
+        }
+    )
 
     private val _chatUpdates = MutableSharedFlow<List<VibeChat>>(
         replay = 1,
@@ -62,9 +71,13 @@ internal class TelegramChatService(
 
     override suspend fun getChat(chatId: Long): VibeChat? {
         val accountIndex = UserConfig.selectedAccount
-        val controller = MessagesController.getInstance(accountIndex)
-        val dialog = controller.dialogs_dict.get(chatId) ?: return null
-        return chatMapper.mapChat(dialog, accountIndex)
+        var chat: VibeChat? = null
+        runOnUiThreadAndWait {
+            val controller = MessagesController.getInstance(accountIndex)
+            val dialog = controller.dialogs_dict.get(chatId)
+            chat = if (dialog != null) chatMapper.mapChat(dialog, accountIndex) else null
+        }
+        return chat
     }
 
     override fun getActiveChats(): Flow<List<VibeChat>> {
@@ -73,6 +86,37 @@ internal class TelegramChatService(
             refreshChats(UserConfig.selectedAccount)
         }
         return _chatUpdates.asSharedFlow()
+    }
+
+    override fun markChatAsRead(chatId: Long) {
+        val accountIndex = UserConfig.selectedAccount
+        runOnUiThreadAndWait {
+            try {
+                val controller = MessagesController.getInstance(accountIndex)
+                val req = TLRPC.TL_messages_readHistory()
+                req.peer = controller.getInputPeer(chatId)
+                req.max_id = Int.MAX_VALUE
+                ConnectionsManager.getInstance(accountIndex).sendRequest(
+                    req,
+                    { response, error ->
+                        if (error != null) {
+                            VibeLogger.w("TelegramChatService", "markChatAsRead failed for chat $chatId: $error")
+                        } else {
+                            val result = response as? TLRPC.TL_messages_affectedMessages
+                            if (result == null) {
+                                VibeLogger.w("TelegramChatService", "markChatAsRead: unexpected response type")
+                            } else {
+                                refreshChats(accountIndex)
+                            }
+                        }
+                    },
+                    { },
+                    ConnectionsManager.RequestFlagFailOnServerErrors
+                )
+            } catch (e: Exception) {
+                VibeLogger.e("TelegramChatService", "markChatAsRead failed for chat $chatId", e)
+            }
+        }
     }
 
     override fun observeTyping(chatId: Long): Flow<List<VibeTypingStatus>> {
@@ -133,18 +177,44 @@ internal class TelegramChatService(
 
     private fun refreshChats(accountIndex: Int) {
         serviceScope.launch {
-            val controller = MessagesController.getInstance(accountIndex)
-            val dialogs = controller.allDialogs
-            
-            // Create a copy to avoid ConcurrentModificationException
-            val dialogsCopy = ArrayList(dialogs)
-            
-            val vibeChats = dialogsCopy.map { dialog ->
-                chatMapper.mapChat(dialog, accountIndex)
-            }
+            val vibeChats = runOnUiThreadAndWait<List<VibeChat>> {
+                val controller = MessagesController.getInstance(accountIndex)
+                val dialogs = controller.allDialogs
+                val dialogsCopy = ArrayList(dialogs)
+                dialogsCopy.map { dialog ->
+                    chatMapper.mapChat(dialog, accountIndex)
+                }
+            } ?: emptyList()
             _chatUpdates.emit(vibeChats)
             VibeLogger.d("TelegramChatService", "Active chats updated: ${vibeChats.size} chats emitted")
         }
+    }
+
+    private fun <T> runOnUiThreadAndWait(action: () -> T): T? {
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            return action()
+        }
+        val latch = CountDownLatch(1)
+        var result: T? = null
+        var failure: Throwable? = null
+        org.telegram.messenger.AndroidUtilities.runOnUIThread {
+            try {
+                result = action()
+            } catch (e: Exception) {
+                failure = e
+            } finally {
+                latch.countDown()
+            }
+        }
+        try {
+            latch.await(10, TimeUnit.SECONDS)
+        } catch (e: InterruptedException) {
+            Thread.currentThread().interrupt()
+        }
+        if (failure != null) {
+            VibeLogger.w("TelegramChatService", "runOnUiThreadAndWait failed", failure)
+        }
+        return result
     }
 
     private fun updateAllTyping(accountIndex: Int) {

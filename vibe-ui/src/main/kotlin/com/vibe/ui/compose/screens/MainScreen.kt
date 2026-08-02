@@ -1,6 +1,8 @@
 package com.vibe.ui.compose.screens
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,29 +22,32 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.Call
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Store
 import androidx.compose.material.icons.filled.Timeline
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDrawerState
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -55,6 +60,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -63,8 +69,10 @@ import com.vibe.ui.compose.components.LoadingDots
 import com.vibe.ui.compose.components.VibeAvatar
 import com.vibe.ui.compose.components.VibeMode
 import com.vibe.ui.compose.components.VibeModeToggle
-import com.vibe.ui.feature.chatlist.ChatListUiState
-import com.vibe.ui.feature.chatlist.ChatListViewModel
+import com.vibe.ui.data.ProfileRepository
+import com.vibe.ui.feature.chatlist.ChatSectionsUiState
+import com.vibe.ui.feature.chatlist.ChatSectionsViewModel
+import com.vibe.ui.i18n.VibeI18n
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -78,9 +86,12 @@ data class ChatPreview(
     val unreadCount: Int,
     val isOnline: Boolean = false,
     val isPinned: Boolean = false,
-    val isMuted: Boolean = false
+    val isMuted: Boolean = false,
+    val avatarUrl: String? = null,
+    val sectionColor: Color = Color(0xFF8D2BFA)
 )
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
     onOpenChat: (chatId: Long, chatName: String) -> Unit,
@@ -90,31 +101,37 @@ fun MainScreen(
     onOpenTimeline: () -> Unit,
     onOpenMarketplace: () -> Unit,
     onOpenAchievements: () -> Unit,
-    onOpenGroups: () -> Unit = onOpenContacts,
+    onOpenGroups: () -> Unit = {},
     onOpenCalls: () -> Unit = {},
-    onOpenFavorites: () -> Unit = {}
+    onOpenFavorites: () -> Unit = {},
+    onOpenBots: () -> Unit = {},
+    onSwitchAccount: () -> Unit = {},
+    onOpenSearch: () -> Unit = {},
+    onOpenCreateChat: () -> Unit = {}
 ) {
-    val viewModel: ChatListViewModel = viewModel()
+    val viewModel: ChatSectionsViewModel = viewModel()
     val state by viewModel.state.collectAsState()
+    val showHint by viewModel.showHint.collectAsState()
+    val classification by viewModel.classification.collectAsState()
+
+    val context = LocalContext.current
+    val profileRepo = remember { ProfileRepository(context) }
 
     var selectedMode by remember { mutableStateOf(VibeMode.PERSONAL) }
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
-    var bridgeError by remember { mutableStateOf<String?>(null) }
-    var searchQuery by remember { mutableStateOf("") }
-    var showSearch by remember { mutableStateOf(false) }
-    var showNewChat by remember { mutableStateOf(false) }
-    var newChatName by remember { mutableStateOf("") }
+    var sectionSheetChat by remember { mutableStateOf<ChatPreview?>(null) }
+    val sheetState = rememberModalBottomSheetState()
 
     val dateFormat = remember { SimpleDateFormat("d MMM", Locale.getDefault()) }
     val timeFormat = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
     val now = remember { System.currentTimeMillis() }
 
     val chats = when (val s = state) {
-        is ChatListUiState.Success -> {
+        is ChatSectionsUiState.Success -> {
             s.chats.map { chat ->
-                val ts = chat.lastActivityDate
+                val ts = chat.lastMessageTime ?: 0L
                 val timeStr = when {
                     ts == 0L -> ""
                     now - ts < 86400000L -> timeFormat.format(Date(ts))
@@ -123,11 +140,13 @@ fun MainScreen(
                 ChatPreview(
                     id = chat.id,
                     name = chat.title,
-                    lastMessage = chat.lastMessage?.text ?: chat.draftText ?: "",
+                    lastMessage = chat.lastMessageText ?: chat.draftText ?: "",
                     time = timeStr,
                     unreadCount = chat.unreadCount,
                     isPinned = chat.isPinned,
-                    isMuted = chat.isMuted
+                    isMuted = chat.isMuted,
+                    avatarUrl = chat.avatarPath,
+                    sectionColor = if (chat.isPersonal) Color(0xFF8D2BFA) else Color(0xFF10B6FA)
                 )
             }
         }
@@ -135,20 +154,17 @@ fun MainScreen(
     }
 
     val userName = when (val s = state) {
-        is ChatListUiState.Success -> s.userName
+        is ChatSectionsUiState.Success -> s.userName
         else -> ""
     }
 
     val userTag = when (val s = state) {
-        is ChatListUiState.Success -> s.userTag
+        is ChatSectionsUiState.Success -> s.userTag
         else -> ""
     }
 
-    val isLoading = state is ChatListUiState.Loading
-    val isSuccess = state is ChatListUiState.Success
-
-    val filteredChats = if (searchQuery.isBlank()) chats
-        else chats.filter { it.name.contains(searchQuery, ignoreCase = true) }
+    val isLoading = state is ChatSectionsUiState.Loading
+    val isSuccess = state is ChatSectionsUiState.Success
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -159,6 +175,7 @@ fun MainScreen(
                 DrawerContent(
                     userName = userName,
                     userTag = userTag,
+                    photoUrl = profileRepo.avatarPath.takeIf { it.isNotBlank() },
                     onProfile = onOpenProfile,
                     onSettings = onOpenSettings,
                     onContacts = onOpenContacts,
@@ -168,6 +185,8 @@ fun MainScreen(
                     onGroups = onOpenGroups,
                     onCalls = onOpenCalls,
                     onFavorites = onOpenFavorites,
+                    onBots = onOpenBots,
+                    onSwitchAccount = onSwitchAccount,
                     onClose = { scope.launch { drawerState.close() } }
                 )
             }
@@ -197,38 +216,25 @@ fun MainScreen(
                             )
                         }
 
-                        IconButton(onClick = { showSearch = !showSearch; searchQuery = "" }) {
-                            Icon(
-                                if (showSearch) Icons.Default.Close else Icons.Default.Search,
-                                "Search",
-                                tint = MaterialTheme.colorScheme.onBackground
-                            )
+                        IconButton(onClick = onOpenSearch) {
+                            Icon(Icons.Default.Search, "Search",
+                                tint = MaterialTheme.colorScheme.onBackground)
                         }
                     }
 
                     VibeModeToggle(
                         selectedMode = selectedMode,
-                        onModeSelected = { selectedMode = it },
+                        onModeSelected = {
+                            selectedMode = it
+                            viewModel.selectMode(it == VibeMode.PERSONAL)
+                        },
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
-
-                    if (showSearch) {
-                        OutlinedTextField(
-                            value = searchQuery,
-                            onValueChange = { searchQuery = it },
-                            placeholder = { Text("Поиск чатов...") },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 4.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            singleLine = true
-                        )
-                    }
                 }
             },
             floatingActionButton = {
                 FloatingActionButton(
-                    onClick = { showNewChat = true; newChatName = "" },
+                    onClick = onOpenCreateChat,
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary,
                     shape = RoundedCornerShape(16.dp)
@@ -238,7 +244,7 @@ fun MainScreen(
             }
         ) { padding ->
             when {
-                state is ChatListUiState.Error && !isSuccess -> {
+                state is ChatSectionsUiState.Error && !isSuccess -> {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
@@ -251,13 +257,13 @@ fun MainScreen(
                                 color = MaterialTheme.colorScheme.error
                             )
                             Spacer(modifier = Modifier.height(8.dp))
-                            TextButton(onClick = { viewModel.retry() }) {
+                            TextButton(onClick = { viewModel.load() }) {
                                 Text("Повторить")
                             }
                         }
                     }
                 }
-                isLoading && filteredChats.isEmpty() -> {
+                isLoading && chats.isEmpty() -> {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
@@ -275,7 +281,7 @@ fun MainScreen(
                         }
                     }
                 }
-                filteredChats.isEmpty() && searchQuery.isNotBlank() -> {
+                chats.isEmpty() -> {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
@@ -283,7 +289,7 @@ fun MainScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "Ничего не найдено",
+                            text = "Нет чатов",
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
@@ -294,10 +300,19 @@ fun MainScreen(
                             .fillMaxSize()
                             .padding(padding)
                     ) {
-                        items(filteredChats, key = { it.id }) { chat ->
+                        if (showHint) {
+                            item(key = "section_hint") {
+                                SectionHintBanner(
+                                    onClassify = { viewModel.classifyChats() },
+                                    onDismiss = { viewModel.dismissHint() }
+                                )
+                            }
+                        }
+                        items(chats, key = { it.id }) { chat ->
                             ChatListItem(
                                 chat = chat,
-                                onClick = { onOpenChat(chat.id, chat.name) }
+                                onClick = { onOpenChat(chat.id, chat.name) },
+                                onLongClick = { sectionSheetChat = chat }
                             )
                         }
                     }
@@ -306,66 +321,121 @@ fun MainScreen(
         }
     }
 
-    if (showNewChat) {
+    val sheetChat = sectionSheetChat
+    if (sheetChat != null) {
+        ModalBottomSheet(
+            onDismissRequest = { sectionSheetChat = null },
+            sheetState = sheetState
+        ) {
+            Text(
+                text = sheetChat.name,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(horizontal = 24.dp)
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "Перенести в раздел:",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 24.dp)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Surface(
+                onClick = {
+                    viewModel.overrideChat(sheetChat.id, isPersonal = true)
+                    sectionSheetChat = null
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+            ) {
+                Text(
+                    text = "Личное",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = Color(0xFF8D2BFA),
+                    modifier = Modifier.padding(16.dp)
+                )
+            }
+            Surface(
+                onClick = {
+                    viewModel.overrideChat(sheetChat.id, isPersonal = false)
+                    sectionSheetChat = null
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+            ) {
+                Text(
+                    text = "Работа",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = Color(0xFF10B6FA),
+                    modifier = Modifier.padding(16.dp)
+                )
+            }
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+    }
+
+    val preview = classification
+    if (preview != null) {
         AlertDialog(
-            onDismissRequest = { showNewChat = false },
-            title = { Text("Новый чат") },
+            onDismissRequest = { viewModel.dismissClassification() },
+            title = { Text("Разложить чаты на разделы?") },
             text = {
-                OutlinedTextField(
-                    value = newChatName,
-                    onValueChange = { newChatName = it },
-                    placeholder = { Text("Имя контакта или ID") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                Text(
+                    "Aurion определил разделы для ${preview.changes.size} чатов: " +
+                        "${preview.personalCount} личных и ${preview.workCount} рабочих. " +
+                        "Остальные оставим как есть."
                 )
             },
             confirmButton = {
-                TextButton(onClick = {
-                    if (newChatName.isNotBlank()) {
-                        onOpenChat(-1, newChatName)
-                        showNewChat = false
-                    }
-                }) { Text("Создать") }
+                TextButton(onClick = { viewModel.applyClassification() }) {
+                    Text("Применить")
+                }
             },
             dismissButton = {
-                TextButton(onClick = { showNewChat = false }) { Text("Отмена") }
-            }
-        )
-    }
-
-    if (bridgeError != null) {
-        AlertDialog(
-            onDismissRequest = { bridgeError = null },
-            title = { Text("Ошибка") },
-            text = { Text(bridgeError ?: "") },
-            confirmButton = {
-                TextButton(onClick = { bridgeError = null }) { Text("OK") }
+                TextButton(onClick = { viewModel.dismissClassification() }) {
+                    Text("Отмена")
+                }
             }
         )
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun ChatListItem(
     chat: ChatPreview,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onLongClick: () -> Unit
 ) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
             .padding(horizontal = 16.dp, vertical = 6.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            VibeAvatar(
-                name = chat.name,
-                size = 48.dp,
-                hasStory = chat.isPinned,
-                badgeCount = if (chat.unreadCount > 0) chat.unreadCount else null
-            )
+            Box {
+                VibeAvatar(
+                    name = chat.name,
+                    size = 48.dp,
+                    photoUrl = chat.avatarUrl,
+                    hasStory = chat.isPinned,
+                    badgeCount = if (chat.unreadCount > 0) chat.unreadCount else null
+                )
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .size(10.dp)
+                        .background(color = chat.sectionColor, shape = RoundedCornerShape(5.dp))
+                )
+            }
 
             Spacer(modifier = Modifier.width(12.dp))
 
@@ -426,6 +496,7 @@ private fun ChatListItem(
 private fun DrawerContent(
     userName: String,
     userTag: String,
+    photoUrl: String? = null,
     onProfile: () -> Unit,
     onSettings: () -> Unit,
     onContacts: () -> Unit,
@@ -435,6 +506,8 @@ private fun DrawerContent(
     onGroups: () -> Unit = onContacts,
     onCalls: () -> Unit = {},
     onFavorites: () -> Unit = {},
+    onBots: () -> Unit = {},
+    onSwitchAccount: () -> Unit = {},
     onClose: () -> Unit
 ) {
     Column(
@@ -450,7 +523,7 @@ private fun DrawerContent(
                 .padding(horizontal = 20.dp, vertical = 16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            VibeAvatar(name = userName, size = 56.dp)
+            VibeAvatar(name = userName, size = 56.dp, photoUrl = photoUrl)
             Spacer(modifier = Modifier.width(16.dp))
             Column {
                 Text(
@@ -467,22 +540,25 @@ private fun DrawerContent(
             }
         }
 
-        HorizontalDivider(modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
-            color = MaterialTheme.colorScheme.outline)
-
-        DrawerMenuItem(Icons.Default.Star, "Чаты", onClick = onClose)
-        DrawerMenuItem(Icons.Default.Person, "Контакты", onClick = onContacts)
-        DrawerMenuItem(Icons.Default.Groups, "Группы / Сообщества", onClick = onGroups)
-        DrawerMenuItem(Icons.Default.Call, "Звонки", onClick = onCalls)
-        DrawerMenuItem(Icons.Default.Timeline, "Vibe Timeline", onClick = onTimeline)
-        DrawerMenuItem(Icons.Default.Store, "Marketplace", onClick = onMarketplace)
-        DrawerMenuItem(Icons.Default.Badge, "Достижения", onClick = onAchievements)
+        DrawerMenuItem(Icons.Default.Person, "Сменить аккаунт", onClick = onSwitchAccount)
 
         HorizontalDivider(modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
             color = MaterialTheme.colorScheme.outline)
 
-        DrawerMenuItem(Icons.Default.Star, "Избранное", onClick = onFavorites)
-        DrawerMenuItem(Icons.Default.Settings, "Настройки", onClick = onSettings)
+        DrawerMenuItem(Icons.Default.Star, VibeI18n.t("chats"), onClick = onClose)
+        DrawerMenuItem(Icons.Default.Person, VibeI18n.t("contacts"), onClick = onContacts)
+        DrawerMenuItem(Icons.Default.Groups, VibeI18n.t("groups"), onClick = onGroups)
+        DrawerMenuItem(Icons.Default.SmartToy, VibeI18n.t("bots"), onClick = onBots)
+        DrawerMenuItem(Icons.Default.Call, VibeI18n.t("calls"), onClick = onCalls)
+        DrawerMenuItem(Icons.Default.Timeline, VibeI18n.t("feed"), onClick = onTimeline)
+        DrawerMenuItem(Icons.Default.Store, VibeI18n.t("marketplace"), onClick = onMarketplace)
+        DrawerMenuItem(Icons.Default.Badge, VibeI18n.t("achievements"), onClick = onAchievements)
+
+        HorizontalDivider(modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+            color = MaterialTheme.colorScheme.outline)
+
+        DrawerMenuItem(Icons.Default.Star, VibeI18n.t("favorites"), onClick = onFavorites)
+        DrawerMenuItem(Icons.Default.Settings, VibeI18n.t("settings"), onClick = onSettings)
     }
 }
 
@@ -511,5 +587,39 @@ private fun DrawerMenuItem(
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurface
         )
+    }
+}
+
+@Composable
+private fun SectionHintBanner(
+    onClassify: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 6.dp),
+        shape = RoundedCornerShape(14.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            Text(
+                text = "Разложить чаты на разделы?",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "Aurion разделит их на «Личные» и «Рабочие» — вы сможете переопределить любой чат.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            Row(horizontalArrangement = Arrangement.End) {
+                TextButton(onClick = onDismiss) { Text("Не сейчас") }
+                TextButton(onClick = onClassify) { Text("Разложить") }
+            }
+        }
     }
 }

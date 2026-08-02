@@ -38,7 +38,8 @@ data class VibeChat(
     val isPinned: Boolean,
     val isArchived: Boolean,
     val draftText: String?,
-    val lastActivityDate: Long
+    val lastActivityDate: Long,
+    val avatarPath: String? = null
 ) {
     enum class ChatType {
         PRIVATE, GROUP, CHANNEL, SUPERGROUP
@@ -243,4 +244,17 @@ data class VibeAccount(
     val index: Int,
     val userId: Long,
     val phoneNumber: String?
+)
+
+/**
+ * A single message found by search, with the chat it belongs to resolved.
+ *
+ * @property message     the found message (chatId is also available on it).
+ * @property chatId      dialog id the message belongs to (positive for users, negative for groups/channels).
+ * @property chatTitle   human-readable title of the chat, resolved from the search response.
+ */
+data class VibeSearchHit(
+    val message: VibeMessage,
+    val chatId: Long,
+    val chatTitle: String
 )

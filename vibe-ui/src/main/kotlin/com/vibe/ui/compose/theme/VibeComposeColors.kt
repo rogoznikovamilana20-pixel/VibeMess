@@ -3,6 +3,9 @@ package com.vibe.ui.compose.theme
 import androidx.compose.ui.graphics.Color
 
 // Brand
+/** System primary — interactive controls (buttons, toggles, tabs, FAB, progress). */
+val VibePrimary = Color(0xFF8B5CF6)
+/** Brand vivid violet — AI accents, personal mode, links, small colored text (AA on dark). */
 val VibePurple = Color(0xFF8D2BFA)
 val VibePurpleDark = Color(0xFF6B1FCC)
 val VibePurpleLight = Color(0xFFB06BFF)
@@ -11,7 +14,6 @@ val VibePurpleVariant = Color(0xFF7C3AED)
 
 // Accents
 val AccentBlue = Color(0xFF10B6FA)
-val AccentPink = Color(0xFFEC4899)
 val AccentGold = Color(0xFFF59E0B)
 val AccentGreen = Color(0xFF4ADE80)
 
@@ -58,7 +60,7 @@ val Offline = Color(0xFF6B6580)
 
 // Work / Personal accents
 val WorkAccent = AccentBlue
-val PersonalAccent = AccentPink
+val PersonalAccent = VibePurple
 
 // Reputation
 val ReputationLow = Color(0xFF6B6580)

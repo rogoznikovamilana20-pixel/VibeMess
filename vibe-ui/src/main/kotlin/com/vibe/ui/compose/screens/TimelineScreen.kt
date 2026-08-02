@@ -1,5 +1,6 @@
 package com.vibe.ui.compose.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -42,11 +43,15 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.vibe.ui.compose.components.VibeAvatar
+import com.vibe.ui.data.AchievementManager
 import com.vibe.ui.data.db.VibeDatabase
+import com.vibe.ui.data.ProfileRepository
 import com.vibe.ui.data.db.entity.TimelinePostEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -59,6 +64,7 @@ import java.util.Locale
 @Composable
 fun TimelineScreen(onBack: () -> Unit) {
     val context = LocalContext.current
+    val profileRepo = remember { ProfileRepository(context) }
     val db = remember { VibeDatabase.getDatabase(context) }
     val posts by db.timelineDao().getAllPosts().collectAsState(initial = emptyList())
     var showDialog by remember { mutableStateOf(false) }
@@ -69,7 +75,7 @@ fun TimelineScreen(onBack: () -> Unit) {
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Vibe Timeline", fontWeight = FontWeight.Bold) },
+                title = { Text("Лента", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
@@ -114,7 +120,17 @@ fun TimelineScreen(onBack: () -> Unit) {
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp)
             ) {
                 items(posts, key = { it.id }) { post ->
-                    TimelinePostCard(post)
+                    TimelinePostCard(post = post, onLike = {
+                        scope.launch {
+                            withContext(Dispatchers.IO) {
+                                db.timelineDao().setLiked(
+                                    post.id,
+                                    !post.isLiked,
+                                    if (post.isLiked) -1 else 1
+                                )
+                            }
+                        }
+                    })
                 }
             }
         }
@@ -141,9 +157,10 @@ fun TimelineScreen(onBack: () -> Unit) {
                             withContext(Dispatchers.IO) {
                                 db.timelineDao().insertPost(TimelinePostEntity(
                                     content = newPostText.trim(),
-                                    authorName = "Андрей",
+                                    authorName = profileRepo.displayName,
                                     timestamp = System.currentTimeMillis()
                                 ))
+                                AchievementManager(context).unlock(AchievementManager.Id.FIRST_POST)
                             }
                         }
                     }
@@ -161,7 +178,7 @@ fun TimelineScreen(onBack: () -> Unit) {
 }
 
 @Composable
-private fun TimelinePostCard(post: TimelinePostEntity) {
+private fun TimelinePostCard(post: TimelinePostEntity, onLike: () -> Unit) {
     val dateFormat = remember { SimpleDateFormat("d MMM HH:mm", Locale("ru")) }
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -189,13 +206,25 @@ private fun TimelinePostCard(post: TimelinePostEntity) {
                 style = MaterialTheme.typography.bodyMedium)
             Spacer(modifier = Modifier.height(10.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.FavoriteBorder, "Нравится",
-                    modifier = Modifier.size(16.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("${post.likes}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable(enabled = post.id != 0L, onClick = onLike)
+                        .padding(horizontal = 8.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        if (post.isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                        "Нравится",
+                        modifier = Modifier.size(18.dp),
+                        tint = if (post.isLiked) Color(0xFFEF4444) else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("${post.likes}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (post.isLiked) Color(0xFFEF4444)
+                        else MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             }
         }
     }

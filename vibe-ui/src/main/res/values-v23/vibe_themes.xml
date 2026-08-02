@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Vibe Dark Theme (API 23+: windowLightStatusBar) -->
+    <style name="Theme.Vibe" parent="Theme.AppCompat.NoActionBar">
+        <item name="android:windowBackground">#0C0B1A</item>
+        <item name="android:statusBarColor">#0C0B1A</item>
+        <item name="android:navigationBarColor">#0C0B1A</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>

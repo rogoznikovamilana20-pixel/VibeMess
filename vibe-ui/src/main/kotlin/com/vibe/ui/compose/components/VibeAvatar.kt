@@ -15,10 +15,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import java.io.File
 
 @Composable
 fun VibeAvatar(
@@ -44,7 +49,7 @@ fun VibeAvatar(
         val colors = listOf(
             primaryColor,
             Color(0xFF10B6FA),
-            Color(0xFFEC4899),
+            Color(0xFF8D2BFA),
             Color(0xFF4ADE80),
             Color(0xFFF59E0B),
             Color(0xFF0EA5E9)
@@ -53,6 +58,10 @@ fun VibeAvatar(
     }
 
     val textSize = size.value * 0.35f
+
+    // File-path avatars (Telegram cache) may not be downloaded yet — show initials until then.
+    val photoReady = photoUrl != null &&
+        (!photoUrl.startsWith("/") || remember(photoUrl) { File(photoUrl).exists() })
 
     Box(
         modifier = modifier.size(size + if (hasStory) 4.dp else 0.dp),
@@ -72,16 +81,19 @@ fun VibeAvatar(
             modifier = Modifier
                 .size(size)
                 .clip(CircleShape)
-                .background(bgColor),
+                .background(if (photoReady) Color.Transparent else bgColor),
             contentAlignment = Alignment.Center
         ) {
-            if (photoUrl != null) {
-                // Placeholder for Coil/Glide integration
-                Text(
-                    text = initials,
-                    color = Color.White,
-                    fontSize = textSize.sp,
-                    fontWeight = FontWeight.Bold
+            if (photoReady) {
+                val ctx = LocalContext.current
+                AsyncImage(
+                    model = ImageRequest.Builder(ctx)
+                        .data(photoUrl)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = name,
+                    modifier = Modifier.size(size).clip(CircleShape),
+                    contentScale = ContentScale.Crop
                 )
             } else {
                 Text(

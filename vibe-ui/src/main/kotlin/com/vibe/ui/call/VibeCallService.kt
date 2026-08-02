@@ -26,7 +26,16 @@ class VibeCallService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_START -> {
-                val userId = intent.getStringExtra(EXTRA_USER_ID) ?: return START_STICKY
+                val userId = intent.getStringExtra(EXTRA_USER_ID)
+                if (userId == null) {
+                    // Process was restarted with a null intent (START_STICKY) —
+                    // restore the last known user from prefs instead of idling.
+                    val restored = CallUtils.getUserIdFromPrefs(this)
+                    if (restored.isNotBlank()) {
+                        connectSignaling(restored)
+                    }
+                    return START_STICKY
+                }
                 connectSignaling(userId)
             }
             ACTION_STOP -> {
@@ -35,6 +44,13 @@ class VibeCallService : Service() {
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 stopSelf()
             }
+            else -> {
+                // Null intent after process restart.
+                val restored = CallUtils.getUserIdFromPrefs(this)
+                if (restored.isNotBlank()) {
+                    connectSignaling(restored)
+                }
+            }
         }
         return START_STICKY
     }
@@ -42,19 +58,29 @@ class VibeCallService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     private fun connectSignaling(userId: String) {
-        signaling = SupabaseSignaling(
-            projectUrl = SupabaseSignaling.SUPABASE_URL,
-            anonKey = SupabaseSignaling.SUPABASE_ANON_KEY,
-            userId = userId,
-            onIncomingCall = { callerId, roomId ->
-                VibeLogger.d(TAG, "Incoming call from $callerId")
-                showIncomingCallNotification(callerId, roomId)
-            },
-            onRemoteSdp = {},
-            onRemoteIce = {},
-            onCallAccepted = {}
-        )
-        signaling?.connect()
+        disconnectSignaling()
+        signaling = try {
+            SupabaseSignaling(
+                projectUrl = SupabaseSignaling.SUPABASE_URL,
+                anonKey = SupabaseSignaling.SUPABASE_ANON_KEY,
+                userId = userId,
+                onIncomingCall = { callerId, roomId ->
+                    VibeLogger.d(TAG, "Incoming call from $callerId")
+                    showIncomingCallNotification(callerId, roomId)
+                },
+                onRemoteSdp = {},
+                onRemoteIce = {},
+                onCallAccepted = {}
+            )
+        } catch (e: Exception) {
+            VibeLogger.e(TAG, "signaling init failed", e)
+            null
+        }
+        try {
+            signaling?.connect()
+        } catch (e: Exception) {
+            VibeLogger.e(TAG, "signaling connect failed", e)
+        }
     }
 
     private fun disconnectSignaling() {

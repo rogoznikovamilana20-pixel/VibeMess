@@ -51,6 +51,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.vibe.ui.data.AchievementManager
+import com.vibe.ui.data.ProfileRepository
 import com.vibe.ui.data.db.VibeDatabase
 import com.vibe.ui.data.db.entity.MarketplaceListingEntity
 import kotlinx.coroutines.Dispatchers
@@ -65,6 +67,7 @@ private val categories = listOf("Все", "Услуги", "Товары", "Ци�
 @Composable
 fun MarketplaceScreen(onBack: () -> Unit) {
     val context = LocalContext.current
+    val profileRepo = remember { ProfileRepository(context) }
     val db = remember { VibeDatabase.getDatabase(context) }
     val allListings by db.marketplaceDao().getActiveListings().collectAsState(initial = emptyList())
     var selectedCategory by remember { mutableStateOf("Все") }
@@ -141,13 +144,60 @@ fun MarketplaceScreen(onBack: () -> Unit) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             } else {
+                var buyListing by remember { mutableStateOf<MarketplaceListingEntity?>(null) }
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp)
                 ) {
                     items(listings, key = { it.id }) { listing ->
-                        ListingCard(listing)
+                        ListingCard(listing, onBuy = { buyListing = listing })
                     }
+                }
+                buyListing?.let { listing ->
+                    val priceSparks = listing.price.toLong().coerceAtLeast(1)
+                    val commission = com.vibe.ui.data.payment.SparkManager.commissionFor(priceSparks)
+                    AlertDialog(
+                        onDismissRequest = { buyListing = null },
+                        title = { Text("Покупка") },
+                        text = {
+                            Column {
+                                Text("${listing.title} — $priceSparks ⚡")
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text("Комиссия платформы: $commission ⚡ (5%)",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text("Продавцу зачислится ${priceSparks - commission} ⚡",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        },
+                        confirmButton = {
+                            TextButton(onClick = {
+                                scope.launch {
+                                    val ok = com.vibe.ui.data.payment.SparkManager.spendSparks(priceSparks)
+                                    if (ok) {
+                                        db.marketplaceDao().deactivate(listing.id)
+                                        android.widget.Toast.makeText(
+                                            context,
+                                            "Куплено за $priceSparks ⚡",
+                                            android.widget.Toast.LENGTH_SHORT
+                                        ).show()
+                                    } else {
+                                        android.widget.Toast.makeText(
+                                            context,
+                                            "Недостаточно Искр — пополните в профиле",
+                                            android.widget.Toast.LENGTH_LONG
+                                        ).show()
+                                    }
+                                }
+                                buyListing = null
+                            }) { Text("Купить") }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { buyListing = null }) { Text("Отмена") }
+                        }
+                    )
                 }
             }
         }
@@ -209,8 +259,9 @@ fun MarketplaceScreen(onBack: () -> Unit) {
                                     price = priceVal,
                                     category = category,
                                     createdAt = System.currentTimeMillis(),
-                                    sellerName = "Андрей"
+                                    sellerName = profileRepo.displayName
                                 ))
+                                AchievementManager(context).unlock(AchievementManager.Id.FIRST_LISTING)
                             }
                         }
                     }
@@ -228,7 +279,10 @@ fun MarketplaceScreen(onBack: () -> Unit) {
 }
 
 @Composable
-private fun ListingCard(listing: MarketplaceListingEntity) {
+private fun ListingCard(
+    listing: MarketplaceListingEntity,
+    onBuy: () -> Unit = {}
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -273,6 +327,13 @@ private fun ListingCard(listing: MarketplaceListingEntity) {
             Text("Продавец: ${listing.sellerName}",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(modifier = Modifier.height(8.dp))
+            TextButton(
+                onClick = onBuy,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Купить за ⚡", fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+            }
         }
     }
 }

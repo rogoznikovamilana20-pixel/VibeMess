@@ -10,20 +10,25 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.KeyboardVoice
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Videocam
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -43,10 +48,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.layout.widthIn
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.vibe.ui.compose.components.MessageStatus
 import com.vibe.ui.compose.components.VibeAvatar
@@ -61,17 +70,29 @@ fun ChatScreen(
     chatId: Long,
     chatName: String,
     onBack: () -> Unit,
-    onOpenCall: (Boolean) -> Unit
+    onOpenCall: (Boolean) -> Unit,
+    scrollToMessageId: Long? = null
 ) {
     val viewModel: ChatScreenViewModel = viewModel()
     val state by viewModel.state.collectAsState()
+    val scrollTarget by viewModel.scrollTarget.collectAsState()
 
     var messageText by remember { mutableStateOf("") }
     var isRecording by remember { mutableStateOf(false) }
+    var showChatMenu by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
 
-    LaunchedEffect(chatId) {
-        viewModel.load(chatId)
+    LaunchedEffect(chatId, scrollToMessageId) {
+        viewModel.load(chatId, scrollToMessageId)
+    }
+
+    LaunchedEffect(scrollTarget) {
+        val index = scrollTarget ?: return@LaunchedEffect
+        try {
+            listState.scrollToItem(index)
+        } catch (e: Exception) {
+            // Index out of bounds — ignore, history is still shown.
+        }
     }
 
     Scaffold(
@@ -104,7 +125,11 @@ fun ChatScreen(
                     }
                 },
                 actions = {
-                            IconButton(onClick = { onOpenCall(false) }) {
+                    IconButton(onClick = { messageText = "@aurion " }) {
+                        Icon(Icons.Default.AutoAwesome, "Aurion",
+                            tint = Color(0xFF8D2BFA))
+                    }
+                    IconButton(onClick = { onOpenCall(false) }) {
                         Icon(Icons.Default.Call, "Call",
                             tint = MaterialTheme.colorScheme.onBackground)
                     }
@@ -112,9 +137,28 @@ fun ChatScreen(
                         Icon(Icons.Default.Videocam, "Video",
                             tint = MaterialTheme.colorScheme.onBackground)
                     }
-                    IconButton(onClick = { /* menu */ }) {
+                    IconButton(onClick = { showChatMenu = true }) {
                         Icon(Icons.Default.MoreVert, "Menu",
                             tint = MaterialTheme.colorScheme.onBackground)
+                    }
+                    DropdownMenu(
+                        expanded = showChatMenu,
+                        onDismissRequest = { showChatMenu = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("В раздел «Личное»", color = Color(0xFF8D2BFA)) },
+                            onClick = {
+                                showChatMenu = false
+                                viewModel.setSection(isPersonal = true)
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("В раздел «Работа»", color = Color(0xFF10B6FA)) },
+                            onClick = {
+                                showChatMenu = false
+                                viewModel.setSection(isPersonal = false)
+                            }
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -134,7 +178,7 @@ fun ChatScreen(
                         verticalAlignment = Alignment.Bottom,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        IconButton(onClick = { /* attachments */ }) {
+                        IconButton(onClick = { }) {
                             Icon(Icons.Default.Add, "Attach",
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
@@ -223,16 +267,127 @@ fun ChatScreen(
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     items(s.messages, key = { it.id }) { msg ->
-                        VibeChatBubble(
-                            text = msg.text,
-                            isOutgoing = msg.isOutgoing,
-                            time = msg.time,
-                            status = msg.status,
-                            reactions = msg.reactions,
-                            replyPreview = msg.replyPreview,
-                            modifier = Modifier
+                        if (msg.id.startsWith("aurion_")) {
+                            AurionBubble(text = msg.text, time = msg.time)
+                        } else {
+                            VibeChatBubble(
+                                text = msg.text,
+                                isOutgoing = msg.isOutgoing,
+                                time = msg.time,
+                                status = msg.status,
+                                reactions = msg.reactions,
+                                replyPreview = msg.replyPreview,
+                                modifier = Modifier
+                            )
+                        }
+                    }
+
+                    if (s.aurionTyping) {
+                        item(key = "aurion_typing") {
+                            AurionTypingIndicator()
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AurionBubble(text: String, time: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 2.dp),
+        horizontalArrangement = Arrangement.Start
+    ) {
+        Spacer(modifier = Modifier.width(8.dp))
+        Column(modifier = Modifier.widthIn(max = 280.dp)) {
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(
+                        Brush.linearGradient(
+                            colors = listOf(
+                                Color(0xFF2A1A4A),
+                                Color(0xFF1A0F2E)
+                            )
+                        )
+                    )
+                    .padding(horizontal = 12.dp, vertical = 8.dp)
+            ) {
+                Column {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.AutoAwesome,
+                            contentDescription = null,
+                            tint = Color(0xFF8D2BFA),
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "Aurion",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color(0xFF8D2BFA),
+                            fontWeight = FontWeight.SemiBold
                         )
                     }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = text,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.White
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = time,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.White.copy(alpha = 0.5f),
+                        fontSize = 11.sp
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AurionTypingIndicator() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.Start
+    ) {
+        Box(
+            modifier = Modifier
+                .size(32.dp)
+                .clip(CircleShape)
+                .background(Color(0xFF8D2BFA)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                Icons.Default.AutoAwesome,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(16.dp)
+            )
+        }
+        Spacer(modifier = Modifier.width(8.dp))
+        Box(
+            modifier = Modifier
+                .clip(RoundedCornerShape(12.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .padding(horizontal = 12.dp, vertical = 10.dp)
+        ) {
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                repeat(3) {
+                    Box(
+                        modifier = Modifier
+                            .size(6.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFF8D2BFA).copy(alpha = 0.5f))
+                    )
                 }
             }
         }

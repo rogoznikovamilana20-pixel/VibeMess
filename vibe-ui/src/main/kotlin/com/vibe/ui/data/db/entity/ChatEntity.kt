@@ -5,10 +5,13 @@ import androidx.room.PrimaryKey
 
 /**
  * Room entity for chats.
+ *
+ * The primary key is (accountId, id): Telegram chat ids are only unique per account,
+ * and Vibe supports multiple Telegram accounts.
  */
-@Entity(tableName = "chats")
+@Entity(tableName = "chats", primaryKeys = ["accountId", "id"])
 data class ChatEntity(
-    @PrimaryKey
+    val accountId: Long,
     val id: Long,
     val title: String,
     val type: String, // PRIVATE, GROUP, CHANNEL, SUPERGROUP
@@ -20,5 +23,6 @@ data class ChatEntity(
     val isArchived: Boolean,
     val draftText: String?,
     val isPersonal: Boolean = true, // Личное/Работа
+    val avatarPath: String? = null, // Cached Telegram avatar file path
     val lastSynced: Long = System.currentTimeMillis()
 )

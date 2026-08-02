@@ -16,9 +16,16 @@ import com.vibe.common.logging.VibeLogger
 /**
  * Implementation of [IContactService] using Telegram core.
  */
-internal class TelegramContactService : IContactService, NotificationCenter.NotificationCenterDelegate {
+internal class TelegramContactService(
+    private val currentAccount: Int = UserConfig.selectedAccount,
+    private val contactsControllerProvider: (Int) -> ContactsController = { ContactsController.getInstance(it) }
+) : IContactService, NotificationCenter.NotificationCenterDelegate {
 
-    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val serviceScope = CoroutineScope(
+        SupervisorJob() + Dispatchers.Default + CoroutineExceptionHandler { _, e ->
+            VibeLogger.e("TelegramContactService", "background coroutine crashed", e)
+        }
+    )
 
     private val _contactUpdates = MutableSharedFlow<List<VibeUser>>(
         extraBufferCapacity = 8,
@@ -26,9 +33,8 @@ internal class TelegramContactService : IContactService, NotificationCenter.Noti
     )
 
     override suspend fun getContacts(): List<VibeUser> = withContext(Dispatchers.Default) {
-        val account = UserConfig.selectedAccount
-        val contactsController = ContactsController.getInstance(account)
-        TelegramCoreAdapter.mapContacts(contactsController.contacts, account)
+        val cc = contactsControllerProvider(currentAccount)
+        TelegramCoreAdapter.mapContacts(cc.contacts, currentAccount)
     }
 
     override fun observeContacts(): Flow<List<VibeUser>> = _contactUpdates.asSharedFlow()
@@ -36,14 +42,13 @@ internal class TelegramContactService : IContactService, NotificationCenter.Noti
     override fun didReceivedNotification(id: Int, account: Int, vararg args: Any?) {
         if (id == NotificationCenter.contactsDidLoad) {
             VibeLogger.d("TelegramContactService", "contactsDidLoad received for account $account")
-            val contactsController = ContactsController.getInstance(account)
-            val contacts = contactsController.contacts
+            val cc = contactsControllerProvider(account)
+            val contacts = cc.contacts
             
             if (contacts.isNullOrEmpty()) {
                 return
             }
 
-            // Create a copy to avoid ConcurrentModificationException during mapping on a background thread
             val contactsCopy = ArrayList(contacts)
 
             serviceScope.launch {

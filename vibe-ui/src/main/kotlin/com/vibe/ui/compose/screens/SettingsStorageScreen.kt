@@ -142,7 +142,7 @@ fun SettingsStorageScreen(onBack: () -> Unit) {
                     LinearProgressIndicator(
                         progress = { totalMb },
                         modifier = Modifier.fillMaxWidth(),
-                        color = Color(0xFF8D2BFA),
+                        color = Color(0xFF8B5CF6),
                         trackColor = MaterialTheme.colorScheme.surface
                     )
                     Spacer(modifier = Modifier.height(4.dp))

@@ -101,7 +101,7 @@ fun VibeModeToggle(
                         modifier = Modifier.padding(end = 6.dp),
                         tint = if (isSelected) {
                             when (mode) {
-                                VibeMode.PERSONAL -> Color(0xFFEC4899)
+                                VibeMode.PERSONAL -> Color(0xFF8D2BFA)
                                 VibeMode.WORK -> Color(0xFF10B6FA)
                             }
                         } else textColor

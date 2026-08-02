@@ -12,7 +12,7 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val DarkColorScheme = darkColorScheme(
-    primary = VibePurple,
+    primary = VibePrimary,
     onPrimary = TextPrimaryDark,
     primaryContainer = VibePurpleSurface,
     onPrimaryContainer = VibePurpleLight,
@@ -20,7 +20,7 @@ private val DarkColorScheme = darkColorScheme(
     onSecondary = TextPrimaryDark,
     secondaryContainer = SurfaceVariantDark,
     onSecondaryContainer = TextSecondaryDark,
-    tertiary = AccentPink,
+    tertiary = VibePurple,
     onTertiary = TextPrimaryDark,
     background = BackgroundDark,
     onBackground = TextPrimaryDark,
@@ -28,7 +28,7 @@ private val DarkColorScheme = darkColorScheme(
     onSurface = TextPrimaryDark,
     surfaceVariant = SurfaceVariantDark,
     onSurfaceVariant = TextSecondaryDark,
-    surfaceTint = VibePurple,
+    surfaceTint = VibePrimary,
     error = Error,
     onError = TextPrimaryDark,
     outline = DividerDark,
@@ -37,7 +37,7 @@ private val DarkColorScheme = darkColorScheme(
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = VibePurple,
+    primary = VibePrimary,
     onPrimary = TextPrimaryDark,
     primaryContainer = SurfaceHighlightLight,
     onPrimaryContainer = VibePurpleDark,
@@ -45,7 +45,7 @@ private val LightColorScheme = lightColorScheme(
     onSecondary = TextPrimaryDark,
     secondaryContainer = SurfaceVariantLight,
     onSecondaryContainer = TextSecondaryLight,
-    tertiary = AccentPink,
+    tertiary = VibePurple,
     onTertiary = TextPrimaryDark,
     background = BackgroundLight,
     onBackground = TextPrimaryLight,
@@ -53,7 +53,7 @@ private val LightColorScheme = lightColorScheme(
     onSurface = TextPrimaryLight,
     surfaceVariant = SurfaceVariantLight,
     onSurfaceVariant = TextSecondaryLight,
-    surfaceTint = VibePurple,
+    surfaceTint = VibePrimary,
     error = Error,
     onError = TextPrimaryDark,
     outline = DividerLight,
@@ -80,7 +80,7 @@ fun VibeTheme(
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
-            val window = (view.context as Activity).window
+            val window = (view.context as? Activity)?.window ?: return@SideEffect
             @Suppress("DEPRECATION")
             window.statusBarColor = colorScheme.background.toArgb()
             @Suppress("DEPRECATION")

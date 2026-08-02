@@ -169,6 +169,17 @@ interface IChatService {
     fun getActiveChats(): Flow<List<VibeChat>>
     fun observeTyping(chatId: Long): Flow<List<VibeTypingStatus>>
     fun observeReadState(chatId: Long): Flow<VibeReadState>
+
+    /**
+     * Marks a chat as read (all messages up to the newest one).
+     *
+     * This is THE ONLY documented mutating method on the bridge — everything else is
+     * read-only by design. Read state changes propagate back through [observeReadState]
+     * and [getActiveChats] once the server confirms them.
+     *
+     * @param chatId dialog id (positive for users, negative for chats/channels).
+     */
+    fun markChatAsRead(chatId: Long)
 }
 
 /**
@@ -204,6 +215,36 @@ interface INotificationService {
 }
 
 /**
+ * Interface for message/chat search.
+ *
+ * Search runs on the Telegram server (TL_messages_searchGlobal / TL_messages_search),
+ * so no local index is required. The returned flow emits exactly one batch and completes.
+ */
+interface ISearchService {
+
+    companion object {
+        /** Default number of results requested from the server per call. */
+        const val DEFAULT_SEARCH_LIMIT = 50
+
+        /** Hard upper bound to keep single searches cheap. */
+        const val MAX_SEARCH_LIMIT = 50
+    }
+
+    /**
+     * Searches messages by [query].
+     *
+     * @param chatId when non-null, search is restricted to this single chat,
+     *               otherwise the whole account history is searched.
+     * @param limit  maximum number of hits requested (coerced to [MAX_SEARCH_LIMIT]).
+     */
+    fun searchMessages(
+        query: String,
+        chatId: Long? = null,
+        limit: Int = DEFAULT_SEARCH_LIMIT
+    ): Flow<List<VibeSearchHit>>
+}
+
+/**
  * Main entry point for the Vibe Bridge.
  */
 interface ITelegramGateway {
@@ -214,4 +255,5 @@ interface ITelegramGateway {
     val chats: IChatService
     val media: IMediaService
     val notifications: INotificationService
+    val search: ISearchService
 }

@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Storage
+import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -38,6 +39,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.vibe.ui.i18n.VibeI18n
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
@@ -52,6 +54,7 @@ fun SettingsScreen(
     onLanguage: () -> Unit = {},
     onStorage: () -> Unit = {},
     onCalls: () -> Unit = {},
+    onMesh: () -> Unit = {},
     onAbout: () -> Unit = {}
 ) {
     Scaffold(
@@ -89,6 +92,7 @@ fun SettingsScreen(
                 ClickableSettingItem(Icons.Default.DarkMode, "Оформление", onClick = onTheme)
                 ClickableSettingItem(Icons.Default.Language, "Язык", onClick = onLanguage)
                 ClickableSettingItem(Icons.Default.Call, "Звонки", onClick = onCalls)
+                ClickableSettingItem(Icons.Default.Wifi, VibeI18n.t("mesh"), onClick = onMesh)
             }
 
             SettingsGroup("Данные") {

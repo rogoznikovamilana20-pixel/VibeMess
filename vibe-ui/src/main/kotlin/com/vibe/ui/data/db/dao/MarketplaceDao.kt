@@ -31,4 +31,7 @@ interface MarketplaceDao {
 
     @Query("DELETE FROM marketplace_listings")
     suspend fun deleteAll()
+
+    @Query("UPDATE marketplace_listings SET isActive = 0 WHERE id = :id")
+    suspend fun deactivate(id: Long)
 }

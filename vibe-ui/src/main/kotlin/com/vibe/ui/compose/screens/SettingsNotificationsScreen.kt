@@ -126,7 +126,7 @@ private fun NotifToggle(label: String, checked: Boolean, onCheckedChange: (Boole
                 checked = checked,
                 onCheckedChange = onCheckedChange,
                 colors = SwitchDefaults.colors(
-                    checkedTrackColor = Color(0xFF8D2BFA)
+                    checkedTrackColor = Color(0xFF8B5CF6)
                 )
             )
         }

@@ -11,5 +11,6 @@ data class TimelinePostEntity(
     val timestamp: Long,
     val imageUri: String? = null,
     val likes: Int = 0,
-    val comments: Int = 0
+    val comments: Int = 0,
+    val isLiked: Boolean = false
 )
