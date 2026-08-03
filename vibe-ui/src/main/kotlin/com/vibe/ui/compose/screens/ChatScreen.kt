@@ -80,6 +80,7 @@ fun ChatScreen(
     var messageText by remember { mutableStateOf("") }
     var isRecording by remember { mutableStateOf(false) }
     var showChatMenu by remember { mutableStateOf(false) }
+    var selectedMessageId by remember { mutableStateOf<String?>(null) }
     val listState = rememberLazyListState()
 
     LaunchedEffect(chatId, scrollToMessageId) {
@@ -178,7 +179,7 @@ fun ChatScreen(
                         verticalAlignment = Alignment.Bottom,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        IconButton(onClick = { }) {
+                        IconButton(onClick = { /* TODO: open attachment picker */ }) {
                             Icon(Icons.Default.Add, "Attach",
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
@@ -270,15 +271,37 @@ fun ChatScreen(
                         if (msg.id.startsWith("aurion_")) {
                             AurionBubble(text = msg.text, time = msg.time)
                         } else {
-                            VibeChatBubble(
-                                text = msg.text,
-                                isOutgoing = msg.isOutgoing,
-                                time = msg.time,
-                                status = msg.status,
-                                reactions = msg.reactions,
-                                replyPreview = msg.replyPreview,
-                                modifier = Modifier
-                            )
+                            Box {
+                                VibeChatBubble(
+                                    text = msg.text,
+                                    isOutgoing = msg.isOutgoing,
+                                    time = msg.time,
+                                    status = msg.status,
+                                    reactions = msg.reactions,
+                                    replyPreview = msg.replyPreview,
+                                    modifier = Modifier,
+                                    onLongClick = if (!msg.isOutgoing) {
+                                        { selectedMessageId = msg.id }
+                                    } else null
+                                )
+                                DropdownMenu(
+                                    expanded = selectedMessageId == msg.id,
+                                    onDismissRequest = { selectedMessageId = null }
+                                ) {
+                                    DropdownMenuItem(
+                                        text = { Text("Пожаловаться") },
+                                        onClick = {
+                                            selectedMessageId = null
+                                        }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("Заблокировать пользователя") },
+                                        onClick = {
+                                            selectedMessageId = null
+                                        }
+                                    )
+                                }
+                            }
                         }
                     }
 

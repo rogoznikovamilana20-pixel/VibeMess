@@ -49,7 +49,13 @@ enum class Screen {
     MESH,
     CALL_CONTACTS,
     CALL_AUDIO,
-    CALL_VIDEO
+    CALL_VIDEO,
+    SUPABASE_MAIN,
+    SUPABASE_CHAT,
+    SUPABASE_SEARCH,
+    ONBOARDING_NEW,
+    SECURITY_SETTINGS,
+    ADMIN
 }
 
 class VibeNavigationState(startScreen: Screen = Screen.SPLASH) {

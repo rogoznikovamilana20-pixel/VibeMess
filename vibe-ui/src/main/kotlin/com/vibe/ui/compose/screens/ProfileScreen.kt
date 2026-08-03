@@ -294,8 +294,8 @@ fun ProfileScreen(
                 if (!isOwnProfile) {
                     Spacer(modifier = Modifier.height(16.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        VibeButton(text = "Написать", onClick = {}, size = VibeButtonSize.MEDIUM)
-                        VibeButton(text = "Позвонить", onClick = {},
+                        VibeButton(text = "Написать", onClick = { /* TODO: navigate to chat */ }, size = VibeButtonSize.MEDIUM)
+                        VibeButton(text = "Позвонить", onClick = { /* TODO: start call */ },
                             variant = VibeButtonVariant.SECONDARY, size = VibeButtonSize.MEDIUM)
                     }
                 }

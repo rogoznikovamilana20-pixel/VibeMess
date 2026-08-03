@@ -253,16 +253,90 @@ fun RegisterScreen(
                         val pair = result
                         if (pair != null) {
                             val serverConfig = ServerConfig(context)
-                            serverConfig.setUserId(pair.first.toString())
-                            serverConfig.setAuthenticated(true)
-                            serverConfig.setVibeId(pair.second)
                             ProfileRepository(context).apply {
                                 this.displayName = name.trim()
                                 this.username = "@$username"
                                 this.vibeId = pair.second
                             }
-                            Toast.makeText(context, "Аккаунт создан", Toast.LENGTH_SHORT).show()
-                            onComplete(pair.second)
+
+                            // Register with Supabase Auth to get a token
+                            val authResult = com.vibe.ui.network.SupabaseAuthManager.signUp(
+                                com.vibe.ui.BuildConfig.SUPABASE_URL,
+                                com.vibe.ui.BuildConfig.SUPABASE_ANON_KEY,
+                                email.trim().lowercase(Locale.ROOT),
+                                password
+                            )
+
+                            // If signup failed (e.g. "already registered"), try login
+                            val finalResult = if (!authResult.success) {
+                                com.vibe.ui.network.SupabaseAuthManager.signIn(
+                                    com.vibe.ui.BuildConfig.SUPABASE_URL,
+                                    com.vibe.ui.BuildConfig.SUPABASE_ANON_KEY,
+                                    email.trim().lowercase(Locale.ROOT),
+                                    password
+                                )
+                            } else authResult
+
+                            if (finalResult.success && finalResult.token != null) {
+                                serverConfig.setAuthToken(finalResult.token)
+                                finalResult.refreshToken?.let { serverConfig.setRefreshToken(it) }
+                                finalResult.userId?.let { serverConfig.setUserId(it) }
+                                serverConfig.setAuthenticated(true)
+
+                                // Create profile in Supabase (non-blocking)
+                                kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
+                                    com.vibe.ui.network.SupabaseClient.createProfile(
+                                        com.vibe.ui.BuildConfig.SUPABASE_URL,
+                                        com.vibe.ui.BuildConfig.SUPABASE_ANON_KEY,
+                                        finalResult.token,
+                                        name.trim(),
+                                        username
+                                    )
+                                }
+
+                                // Generate E2E keys
+                                kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
+                                    com.vibe.ui.e2e.E2EEngine.generateUserKeys()
+                                }
+
+                                Toast.makeText(context, "Аккаунт создан", Toast.LENGTH_SHORT).show()
+                                onComplete(pair.second)
+                            } else {
+                                // Email confirmation required or Supabase unavailable
+                                // Try signIn in case account already exists
+                                val signInResult = com.vibe.ui.network.SupabaseAuthManager.signIn(
+                                    com.vibe.ui.BuildConfig.SUPABASE_URL,
+                                    com.vibe.ui.BuildConfig.SUPABASE_ANON_KEY,
+                                    email.trim().lowercase(Locale.ROOT),
+                                    password
+                                )
+                                if (signInResult.success && signInResult.token != null) {
+                                    serverConfig.setAuthToken(signInResult.token)
+                                    signInResult.refreshToken?.let { serverConfig.setRefreshToken(it) }
+                                    signInResult.userId?.let { serverConfig.setUserId(it) }
+                                    serverConfig.setAuthenticated(true)
+
+                                    kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
+                                        com.vibe.ui.network.SupabaseClient.createProfile(
+                                            com.vibe.ui.BuildConfig.SUPABASE_URL,
+                                            com.vibe.ui.BuildConfig.SUPABASE_ANON_KEY,
+                                            signInResult.token,
+                                            name.trim(),
+                                            username
+                                        )
+                                    }
+
+                                    Toast.makeText(context, "Аккаунт создан", Toast.LENGTH_SHORT).show()
+                                    onComplete(pair.second)
+                                } else {
+                                    // Fall back to local-only mode
+                                    serverConfig.setUserId(pair.first.toString())
+                                    serverConfig.setAuthenticated(true)
+                                    serverConfig.setVibeId(pair.second)
+                                    Toast.makeText(context, "Аккаунт создан (офлайн режим). Подтвердите email для полного доступа.", Toast.LENGTH_LONG).show()
+                                    onComplete(pair.second)
+                                }
+                            }
                         }
                     }
                 },

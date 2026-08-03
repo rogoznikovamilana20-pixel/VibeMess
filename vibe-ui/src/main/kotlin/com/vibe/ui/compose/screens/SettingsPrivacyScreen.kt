@@ -42,7 +42,6 @@ fun SettingsPrivacyScreen(onBack: () -> Unit) {
     val serverConfig = remember { ServerConfig(context) }
     var showOnline by remember { mutableStateOf(serverConfig.isPrivacyOnline()) }
     var readReceipts by remember { mutableStateOf(serverConfig.isPrivacyReceipts()) }
-    var phoneVisibility by remember { mutableStateOf(serverConfig.isPrivacyPhone()) }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -73,9 +72,6 @@ fun SettingsPrivacyScreen(onBack: () -> Unit) {
             })
             PrivacyToggle("Читать уведомления (галочки)", readReceipts, {
                 readReceipts = it; serverConfig.setPrivacyReceipts(it)
-            })
-            PrivacyToggle("Кто может видеть номер телефона", phoneVisibility, {
-                phoneVisibility = it; serverConfig.setPrivacyPhone(it)
             })
 
             Spacer(modifier = Modifier.height(16.dp))

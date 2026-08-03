@@ -34,9 +34,11 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -47,6 +49,7 @@ import com.vibe.bridge.model.VibeChat
 import com.vibe.ui.compose.components.VibeAvatar
 import com.vibe.ui.di.VibeContainer
 import com.vibe.ui.i18n.VibeI18n
+import kotlinx.coroutines.flow.catch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,7 +59,17 @@ fun ChannelsScreen(
     onOpenAdmin: (chatId: Long) -> Unit,
     onOpenCreateChat: () -> Unit
 ) {
-    val chats by remember { VibeContainer.getGateway().chats.getActiveChats() }.collectAsState(initial = emptyList())
+    var chats by remember { mutableStateOf<List<VibeChat>>(emptyList()) }
+
+    LaunchedEffect(Unit) {
+        if (!VibeContainer.isInitialized()) {
+            VibeContainer.initialize()
+        }
+        VibeContainer.getGateway().chats.getActiveChats()
+            .catch { }
+            .collect { loaded -> chats = loaded }
+    }
+
     val channels = chats.filter { it.type == VibeChat.ChatType.CHANNEL }
     val groups = chats.filter { it.type == VibeChat.ChatType.GROUP }
 

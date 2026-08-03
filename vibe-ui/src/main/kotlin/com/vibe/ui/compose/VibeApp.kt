@@ -37,6 +37,7 @@ import com.vibe.ui.compose.screens.MainScreen
 import com.vibe.ui.compose.screens.MarketplaceScreen
 import com.vibe.ui.compose.screens.MeshScreen
 import com.vibe.ui.compose.screens.OnboardingScreen
+import com.vibe.ui.compose.screens.OnboardingScreenNew
 import com.vibe.ui.compose.screens.ProfileScreen
 import com.vibe.ui.compose.screens.RegisterScreen
 import com.vibe.ui.compose.screens.SettingsAboutScreen
@@ -50,6 +51,11 @@ import com.vibe.ui.compose.screens.SettingsStorageScreen
 import com.vibe.ui.compose.screens.SettingsThemeScreen
 import com.vibe.ui.compose.screens.SplashScreen
 import com.vibe.ui.compose.screens.SearchMessagesScreen
+import com.vibe.ui.compose.screens.SupabaseChatScreen
+import com.vibe.ui.compose.screens.SupabaseMainScreen
+import com.vibe.ui.compose.screens.SupabaseSearchScreen
+import com.vibe.ui.compose.screens.SecuritySettingsScreen
+import com.vibe.ui.compose.screens.AdminScreen
 import com.vibe.ui.compose.screens.TimelineScreen
 import com.vibe.ui.compose.screens.WelcomeScreen
 import com.vibe.ui.compose.theme.VibeTheme
@@ -59,13 +65,34 @@ import com.vibe.ui.di.VibeContainer
 import com.vibe.ui.i18n.VibeI18n
 import com.vibe.ui.network.ServerConfig
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @Composable
 fun VibeApp() {
     val context = LocalContext.current
+
+    // Global crash handler — prevents crash loops
+    LaunchedEffect(Unit) {
+        val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+            android.util.Log.e("VibeApp", "Uncaught exception in ${thread.name}", throwable)
+            // Report to Crashlytics if available
+            try {
+                com.google.firebase.crashlytics.FirebaseCrashlytics.getInstance()
+                    .recordException(throwable)
+            } catch (_: Exception) {}
+            // Let the default handler show the crash dialog
+            defaultHandler?.uncaughtException(thread, throwable)
+        }
+    }
+
     val serverConfig = remember { ServerConfig(context) }
     val themeManager = remember { ThemeManager(context) }
+    // Observe language changes to trigger recomposition
+    @Suppress("UNUSED_VARIABLE")
+    val _langObserver = com.vibe.ui.i18n.VibeI18n.currentCode
     com.vibe.ui.i18n.VibeI18n.setLanguage(serverConfig.getAppLanguageCode())
     var isDarkTheme by remember { mutableStateOf(themeManager.isDarkTheme) }
     var incomingCallId by remember { mutableStateOf<String?>(null) }
@@ -81,6 +108,8 @@ fun VibeApp() {
     var currentBotId by remember { mutableStateOf<Long?>(null) }
     var currentBotName by remember { mutableStateOf("") }
     var currentPaymentItem by remember { mutableStateOf("") }
+    var supabaseChatId by remember { mutableStateOf<String?>(null) }
+    var supabaseChatTitle by remember { mutableStateOf("") }
 
     val buildKey = com.vibe.ui.BuildConfig.AI_API_KEY
     if (buildKey.isNotBlank() && serverConfig.getAiApiKey().isBlank()) {
@@ -95,7 +124,11 @@ fun VibeApp() {
     }
 
     if (!VibeContainer.isInitialized()) {
-        VibeContainer.initialize()
+        try {
+            VibeContainer.initialize()
+        } catch (e: Exception) {
+            android.util.Log.e("VibeApp", "VibeContainer init failed", e)
+        }
     }
 
     val isAuthenticated = serverConfig.isAuthenticated()
@@ -103,7 +136,7 @@ fun VibeApp() {
     val startScreen = when {
         !isAuthenticated -> Screen.WELCOME
         !tourCompleted -> Screen.TOUR
-        else -> Screen.MAIN
+        else -> Screen.SUPABASE_MAIN
     }
     val navState = rememberVibeNavigationState(startScreen = startScreen)
 
@@ -126,13 +159,71 @@ fun VibeApp() {
         if (saved.isNotEmpty()) saved else CallUtils.getUserId(context)
     }
 
+    // Online status: set online when composable is active, offline when disposed
+    val onlineScope = rememberCoroutineScope()
+
+    // Refresh session on startup
+    LaunchedEffect(Unit) {
+        if (serverConfig.isAuthenticated()) {
+            serverConfig.refreshSessionIfNeeded()
+        }
+        // Initialize E2EE engine
+        try {
+            com.vibe.ui.e2e.E2EEngine.init(context)
+        } catch (e: Exception) {
+            android.util.Log.e("VibeApp", "E2EEngine init failed", e)
+        }
+        try {
+            com.vibe.ui.focus.FocusModeManager.init(context)
+        } catch (e: Exception) {
+            android.util.Log.e("VibeApp", "FocusModeManager init failed", e)
+        }
+    }
+
+    androidx.compose.runtime.DisposableEffect(Unit) {
+        if (serverConfig.isAuthenticated()) {
+            onlineScope.launch(Dispatchers.IO) {
+                com.vibe.ui.network.SupabaseClient.setOnline(
+                    com.vibe.ui.BuildConfig.SUPABASE_URL,
+                    com.vibe.ui.BuildConfig.SUPABASE_ANON_KEY,
+                    serverConfig.getAuthToken(),
+                    true
+                )
+            }
+        }
+        onDispose {
+            if (serverConfig.isAuthenticated()) {
+                kotlinx.coroutines.GlobalScope.launch(Dispatchers.IO) {
+                    com.vibe.ui.network.SupabaseClient.setOnline(
+                        com.vibe.ui.BuildConfig.SUPABASE_URL,
+                        com.vibe.ui.BuildConfig.SUPABASE_ANON_KEY,
+                        serverConfig.getAuthToken(),
+                        false
+                    )
+                }
+            }
+        }
+    }
+
     LaunchedEffect(Unit) {
         if (!VibeContainer.isInitialized()) {
-            VibeContainer.bindContext(context)
-            VibeContainer.initialize()
+            try {
+                VibeContainer.bindContext(context)
+                VibeContainer.initialize()
+            } catch (e: Exception) {
+                android.util.Log.e("VibeApp", "VibeContainer init in LaunchedEffect failed", e)
+            }
         }
-        com.vibe.ui.data.bot.BotService.start(context.applicationContext)
-        com.vibe.ui.data.sync.ChatSyncService.start()
+        try {
+            com.vibe.ui.data.bot.BotService.start(context.applicationContext)
+        } catch (e: Exception) {
+            android.util.Log.e("VibeApp", "BotService start failed", e)
+        }
+        try {
+            com.vibe.ui.data.sync.ChatSyncService.start()
+        } catch (e: Exception) {
+            android.util.Log.e("VibeApp", "ChatSyncService start failed", e)
+        }
         if (VibeContainer.isInitialized()) {
             try {
                 val account = withContext(Dispatchers.IO) {
@@ -207,7 +298,7 @@ fun VibeApp() {
                 Screen.SPLASH -> SplashScreen(
                     onSplashComplete = {
                         navState.replaceWith(
-                            if (isAuthenticated) Screen.MAIN else Screen.WELCOME
+                            if (isAuthenticated) Screen.SUPABASE_MAIN else Screen.WELCOME
                         )
                     }
                 )
@@ -223,7 +314,7 @@ fun VibeApp() {
                         serverConfig.setVibeId(vibeId)
                         serverConfig.setAuthenticated(true)
                         serverConfig.setTourCompleted(false)
-                        navState.replaceWith(Screen.TOUR)
+                        navState.replaceWith(Screen.ONBOARDING_NEW)
                     }
                 )
 
@@ -243,7 +334,14 @@ fun VibeApp() {
                 Screen.TOUR -> GuidedTourScreen(
                     onComplete = {
                         serverConfig.setTourCompleted(true)
-                        navState.replaceWith(Screen.MAIN)
+                        navState.replaceWith(Screen.SUPABASE_MAIN)
+                    }
+                )
+
+                Screen.ONBOARDING_NEW -> OnboardingScreenNew(
+                    onComplete = {
+                        serverConfig.setTourCompleted(true)
+                        navState.replaceWith(Screen.SUPABASE_MAIN)
                     }
                 )
 
@@ -515,7 +613,10 @@ fun VibeApp() {
                     onStorage = { navState.navigateTo(Screen.SETTINGS_STORAGE) },
                     onCalls = { navState.navigateTo(Screen.SETTINGS_CALLS) },
                     onMesh = { navState.navigateTo(Screen.MESH) },
-                    onAbout = { navState.navigateTo(Screen.SETTINGS_ABOUT) }
+                    onAbout = { navState.navigateTo(Screen.SETTINGS_ABOUT) },
+                    onLogout = {
+                        navState.replaceWith(Screen.WELCOME)
+                    }
                 )
 
                 Screen.MESH -> MeshScreen(onBack = { navState.goBack() })
@@ -558,6 +659,54 @@ fun VibeApp() {
                         callContactName = ""
                         navState.goBack()
                     }
+                )
+
+                Screen.SUPABASE_MAIN -> SupabaseMainScreen(
+                    onOpenChat = { chatId, chatTitle ->
+                        supabaseChatId = chatId
+                        supabaseChatTitle = chatTitle
+                        navState.navigateTo(Screen.SUPABASE_CHAT)
+                    },
+                    onOpenSettings = { navState.navigateTo(Screen.SETTINGS) },
+                    onOpenSearch = { navState.navigateTo(Screen.SUPABASE_SEARCH) },
+                    onOpenProfile = { navState.navigateTo(Screen.PROFILE) },
+                    onOpenContacts = { navState.navigateTo(Screen.CONTACTS) },
+                    onOpenCalls = {
+                        incomingCallId = null
+                        incomingRoomId = null
+                        callContactId = null
+                        callContactName = ""
+                        navState.navigateTo(Screen.CALL_CONTACTS)
+                    },
+                    onOpenBots = { navState.navigateTo(Screen.BOTS) },
+                    onOpenTimeline = { navState.navigateTo(Screen.TIMELINE) },
+                    onOpenMarketplace = { navState.navigateTo(Screen.MARKETPLACE) },
+                    onOpenAdmin = { navState.navigateTo(Screen.ADMIN) }
+                )
+
+                Screen.SUPABASE_CHAT -> SupabaseChatScreen(
+                    chatId = supabaseChatId ?: "",
+                    chatTitle = supabaseChatTitle,
+                    onBack = { navState.goBack() }
+                )
+
+                Screen.SUPABASE_SEARCH -> SupabaseSearchScreen(
+                    onBack = { navState.goBack() },
+                    onOpenChat = { chatId, chatTitle ->
+                        supabaseChatId = chatId
+                        supabaseChatTitle = chatTitle
+                        navState.navigateTo(Screen.SUPABASE_CHAT)
+                    }
+                )
+
+                Screen.SECURITY_SETTINGS -> SecuritySettingsScreen(
+                    userId = serverConfig.getUserId(),
+                    contactId = supabaseChatId,
+                    onBack = { navState.goBack() }
+                )
+
+                Screen.ADMIN -> AdminScreen(
+                    onBack = { navState.goBack() }
                 )
             }
         }

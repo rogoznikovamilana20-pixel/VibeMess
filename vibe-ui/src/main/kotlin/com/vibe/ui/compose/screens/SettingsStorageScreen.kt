@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -198,7 +199,18 @@ fun SettingsStorageScreen(onBack: () -> Unit) {
                                 scope.launch {
                                     withContext(Dispatchers.IO) {
                                         context.cacheDir?.let { dir ->
-                                            dir.walkTopDown().forEach { if (it.isFile) it.delete() }
+                                            dir.listFiles()?.forEach { file ->
+                                                try {
+                                                    if (file.isDirectory) {
+                                                        file.listFiles()?.forEach { child ->
+                                                            try { child.delete() } catch (_: Exception) {}
+                                                        }
+                                                        try { file.delete() } catch (_: Exception) {}
+                                                    } else {
+                                                        try { file.delete() } catch (_: Exception) {}
+                                                    }
+                                                } catch (_: Exception) {}
+                                            }
                                         }
                                     }
                                     cacheCleared = true
@@ -211,7 +223,7 @@ fun SettingsStorageScreen(onBack: () -> Unit) {
                             )
                         ) {
                             Icon(Icons.Default.Delete, null, tint = Color(0xFFEF4444))
-                            Spacer(modifier = Modifier.padding(4.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
                             Text("Очистить кэш", color = Color(0xFFEF4444))
                         }
                     }
@@ -257,7 +269,7 @@ fun SettingsStorageScreen(onBack: () -> Unit) {
 private fun StorageRow(icon: ImageVector, label: String, size: String) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Icon(icon, null, tint = Color(0xFF8D2BFA))
-        Spacer(modifier = Modifier.padding(8.dp))
+        Spacer(modifier = Modifier.width(8.dp))
         Text(label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
         Text(size, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }

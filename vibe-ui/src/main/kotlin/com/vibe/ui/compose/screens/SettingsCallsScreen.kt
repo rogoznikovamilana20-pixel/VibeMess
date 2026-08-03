@@ -86,6 +86,7 @@ fun SettingsCallsScreen(onBack: () -> Unit) {
                 .fillMaxSize()
                 .padding(padding)
                 .padding(horizontal = 16.dp)
+                .verticalScroll(rememberScrollState())
         ) {
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -193,7 +194,7 @@ fun SettingsCallsScreen(onBack: () -> Unit) {
                             turnUsername = it
                             saved = false
                         },
-                        label = { Text("Рмя пользователя") },
+                        label = { Text("Имя пользователя") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true
                     )
