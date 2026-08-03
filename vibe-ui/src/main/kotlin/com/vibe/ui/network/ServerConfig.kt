@@ -69,10 +69,20 @@ class ServerConfig(context: Context) {
                 EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
             )
         } catch (e: Exception) {
-            // Keystore corrupted/invalidated (reinstall, backup restore, ROM change).
-            // Fall back to plain prefs instead of crashing the whole app.
-            android.util.Log.e("ServerConfig", "EncryptedSharedPreferences failed, using plain prefs", e)
-            context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            android.util.Log.e("ServerConfig", "EncryptedSharedPreferences failed, retrying with clean state", e)
+            try {
+                context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit().clear().commit()
+                EncryptedSharedPreferences.create(
+                    context,
+                    PREFS_NAME,
+                    masterKey,
+                    EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                    EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+                )
+            } catch (e2: Exception) {
+                android.util.Log.e("ServerConfig", "EncryptedPrefs retry also failed — secure storage unavailable", e2)
+                throw RuntimeException("Secure storage initialization failed. App cannot run without encrypted preferences.", e2)
+            }
         }
     }
 
@@ -92,6 +102,25 @@ class ServerConfig(context: Context) {
 
     fun setAuthToken(token: String) {
         prefs.edit().putString(KEY_AUTH_TOKEN, token).apply()
+    }
+
+    fun getRefreshToken(): String = prefs.getString("refresh_token", "") ?: ""
+
+    fun setRefreshToken(token: String) {
+        prefs.edit().putString("refresh_token", token).apply()
+    }
+
+    suspend fun refreshSessionIfNeeded() {
+        val refreshToken = getRefreshToken()
+        if (refreshToken.isBlank()) return
+        val result = SupabaseAuthManager.refreshSession(
+            com.vibe.ui.BuildConfig.SUPABASE_URL,
+            com.vibe.ui.BuildConfig.SUPABASE_ANON_KEY,
+            refreshToken
+        )
+        if (result.success && result.token != null) {
+            setAuthToken(result.token)
+        }
     }
 
     fun getVibeId(): String = prefs.getString(KEY_VIBE_ID, "") ?: ""

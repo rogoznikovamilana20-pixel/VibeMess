@@ -113,7 +113,9 @@ class SecureKeyManager(private val context: Context) {
      * Encrypt a string using AES-GCM.
      */
     fun encrypt(plaintext: String): String {
-        val key = getOrCreateKey()
+        val key = getOrCreateKey() ?: throw UnsupportedOperationException(
+            "Encryption requires Android 6.0+ (API 23). KeyStore-backed keys unavailable on this device."
+        )
         val cipher = Cipher.getInstance("AES/GCM/NoPadding")
         cipher.init(Cipher.ENCRYPT_MODE, key)
 
@@ -135,7 +137,9 @@ class SecureKeyManager(private val context: Context) {
             throw SecurityException("Invalid ciphertext: too short (minimum $MIN_CIPHERTEXT_LENGTH bytes)")
         }
 
-        val key = getOrCreateKey()
+        val key = getOrCreateKey() ?: throw UnsupportedOperationException(
+            "Decryption requires Android 6.0+ (API 23). KeyStore-backed keys unavailable on this device."
+        )
         val iv = combined.sliceArray(0 until GCM_IV_LENGTH)
         val ciphertext = combined.sliceArray(GCM_IV_LENGTH until combined.size)
 
