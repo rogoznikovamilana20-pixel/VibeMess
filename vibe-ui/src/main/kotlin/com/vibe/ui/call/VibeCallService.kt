@@ -1,5 +1,6 @@
 package com.vibe.ui.call
 
+import android.Manifest
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -7,10 +8,13 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import com.vibe.common.logging.VibeLogger
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 
 class VibeCallService : Service() {
 
@@ -20,7 +24,23 @@ class VibeCallService : Service() {
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
-        startForeground(NOTIFICATION_ID, buildNotification("Vibe работает в фоне"))
+        val hasMicPermission = ContextCompat.checkSelfPermission(
+            this, Manifest.permission.RECORD_AUDIO
+        ) == PackageManager.PERMISSION_GRANTED
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val type = if (hasMicPermission) {
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+            } else {
+                VibeLogger.w(TAG, "RECORD_AUDIO not granted, starting FGS without mic type")
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_NONE
+            }
+            startForeground(NOTIFICATION_ID, buildNotification("Ожидание звонков"), type)
+        } else {
+            startForeground(NOTIFICATION_ID, buildNotification("Ожидание звонков"))
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            stopForeground(STOP_FOREGROUND_REMOVE)
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -179,6 +199,13 @@ class VibeCallService : Service() {
         const val EXTRA_USER_ID = "user_id"
 
         fun start(context: Context, userId: String) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
+                ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO)
+                != PackageManager.PERMISSION_GRANTED
+            ) {
+                VibeLogger.w("VibeCallService", "RECORD_AUDIO not granted — cannot start call service")
+                return
+            }
             val intent = Intent(context, VibeCallService::class.java).apply {
                 action = ACTION_START
                 putExtra(EXTRA_USER_ID, userId)
