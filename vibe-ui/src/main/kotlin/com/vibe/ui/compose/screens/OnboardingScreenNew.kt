@@ -52,6 +52,7 @@ import androidx.compose.ui.unit.sp
 import com.vibe.ui.compose.theme.VibePrimary
 import com.vibe.ui.compose.theme.VibePurple
 import com.vibe.ui.compose.theme.VibePurpleLight
+import com.vibe.ui.i18n.VibeI18n
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -70,20 +71,20 @@ fun OnboardingScreenNew(
     val pages = listOf(
         OnboardingPage(
             icon = Icons.AutoMirrored.Filled.Chat,
-            title = "Общайся свободно",
-            description = "Мгновенные сообщения, голосовые и видеозвонки с шифрованием",
+            title = VibeI18n.t("onboarding_page_chat_title"),
+            description = VibeI18n.t("onboarding_page_chat_desc"),
             gradient = listOf(VibePurple, VibePurpleLight)
         ),
         OnboardingPage(
             icon = Icons.Default.Shield,
-            title = "Приватность прежде всего",
-            description = "Ваши данные защищены end-to-end шифрованием",
+            title = VibeI18n.t("onboarding_page_privacy_title"),
+            description = VibeI18n.t("onboarding_page_privacy_desc"),
             gradient = listOf(Color(0xFF10B6FA), Color(0xFF0EA5E9))
         ),
         OnboardingPage(
             icon = Icons.Default.Notifications,
-            title = "Будь в курсе",
-            description = "Push-уведомления и статус онлайн",
+            title = VibeI18n.t("onboarding_page_notify_title"),
+            description = VibeI18n.t("onboarding_page_notify_desc"),
             gradient = listOf(Color(0xFF4ADE80), Color(0xFF22C55E))
         )
     )
@@ -196,7 +197,7 @@ fun OnboardingScreenNew(
                         containerColor = VibePrimary
                     )
                 ) {
-                    Text("Далее", style = MaterialTheme.typography.titleMedium)
+                    Text(VibeI18n.t("onboarding_next"), style = MaterialTheme.typography.titleMedium)
                     Spacer(modifier = Modifier.width(8.dp))
                     Icon(Icons.AutoMirrored.Filled.ArrowForward, null)
                 }
@@ -210,7 +211,7 @@ fun OnboardingScreenNew(
                         containerColor = VibePrimary
                     )
                 ) {
-                    Text("Начать", style = MaterialTheme.typography.titleMedium)
+                    Text(VibeI18n.t("onboarding_start"), style = MaterialTheme.typography.titleMedium)
                 }
             }
 
@@ -218,7 +219,7 @@ fun OnboardingScreenNew(
 
             if (currentPage < pages.size - 1) {
                 TextButton(onClick = onComplete) {
-                    Text("Пропустить", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(VibeI18n.t("onboarding_skip"), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }

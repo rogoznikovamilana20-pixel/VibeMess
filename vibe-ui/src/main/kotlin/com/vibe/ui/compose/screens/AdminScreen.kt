@@ -64,6 +64,7 @@ import com.vibe.ui.compose.components.VibeAvatar
 import com.vibe.ui.network.AdminLog
 import com.vibe.ui.network.AdminStats
 import com.vibe.ui.network.ServerConfig
+import com.vibe.ui.i18n.VibeI18n
 import com.vibe.ui.network.SupabaseClient
 import kotlinx.coroutines.launch
 
@@ -111,7 +112,7 @@ fun AdminScreen(
             }
             
             if (token.isBlank()) {
-                error = "Необходима авторизация через Supabase. Войдите заново через Настройки → Выход."
+                error = VibeI18n.t("admin_auth_required")
                 loading = false
                 return@launch
             }
@@ -122,7 +123,7 @@ fun AdminScreen(
             myRole = myProfile?.role ?: "user"
 
             if (!isAdmin) {
-                error = "Нет прав администратора"
+                error = VibeI18n.t("admin_no_rights")
                 loading = false
                 return@launch
             }
@@ -157,7 +158,7 @@ fun AdminScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Админ-панель", fontWeight = FontWeight.Bold) },
+                title = { Text(VibeI18n.t("admin_panel"), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
@@ -173,7 +174,7 @@ fun AdminScreen(
         when {
             loading -> {
                 Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                    Text("Загрузка...", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(VibeI18n.t("loading"), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             error != null -> {
@@ -192,13 +193,13 @@ fun AdminScreen(
                     // Tabs
                     TabRow(selectedTabIndex = selectedTab) {
                         Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 },
-                            text = { Text("Пользователи") },
+                            text = { Text(VibeI18n.t("admin_users")) },
                             icon = { Icon(Icons.Default.Group, null, modifier = Modifier.size(18.dp)) })
                         Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 },
-                            text = { Text("Статистика") },
+                            text = { Text(VibeI18n.t("admin_stats")) },
                             icon = { Icon(Icons.Default.TrendingUp, null, modifier = Modifier.size(18.dp)) })
                         Tab(selected = selectedTab == 2, onClick = { selectedTab = 2 },
-                            text = { Text("Журнал") },
+                            text = { Text(VibeI18n.t("admin_journal")) },
                             icon = { Icon(Icons.Default.Security, null, modifier = Modifier.size(18.dp)) })
                     }
 
@@ -227,11 +228,11 @@ fun AdminScreen(
     // Promote/Demote dialog
     showRoleDialog?.let { user ->
         val newRole = if (user.role == "admin") "user" else "admin"
-        val actionText = if (user.role == "admin") "Снять с админа" else "Назначить админом"
+        val actionText = if (user.role == "admin") VibeI18n.t("admin_remove_admin") else VibeI18n.t("admin_make_admin")
         AlertDialog(
             onDismissRequest = { showRoleDialog = null },
             title = { Text(actionText) },
-            text = { Text("$actionText пользователя ${user.displayName}?") },
+            text = { Text("$actionText ${VibeI18n.t("admin_user_of")} ${user.displayName}?") },
             confirmButton = {
                 TextButton(onClick = {
                     scope.launch {
@@ -244,7 +245,7 @@ fun AdminScreen(
                     showRoleDialog = null
                 }) { Text(actionText) }
             },
-            dismissButton = { TextButton(onClick = { showRoleDialog = null }) { Text("Отмена") } }
+            dismissButton = { TextButton(onClick = { showRoleDialog = null }) { Text(VibeI18n.t("cancel")) } }
         )
     }
 
@@ -252,18 +253,18 @@ fun AdminScreen(
     showBanDialog?.let { user ->
         AlertDialog(
             onDismissRequest = { showBanDialog = null; banReason = "" },
-            title = { Text(if (user.isBanned) "Разбанить?" else "Забанить?") },
+            title = { Text(if (user.isBanned) "${VibeI18n.t("admin_unban")}?" else "${VibeI18n.t("admin_ban")}?") },
             text = {
                 if (user.isBanned) {
-                    Text("Разбанить пользователя ${user.displayName}?")
+                    Text("${VibeI18n.t("admin_unban_user")} ${user.displayName}?")
                 } else {
                     Column {
-                        Text("Забанить пользователя ${user.displayName}?")
+                        Text("${VibeI18n.t("admin_ban_user")} ${user.displayName}?")
                         Spacer(modifier = Modifier.height(8.dp))
                         OutlinedTextField(
                             value = banReason,
                             onValueChange = { banReason = it },
-                            label = { Text("Причина (необязательно)") },
+                            label = { Text(VibeI18n.t("admin_reason_optional")) },
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
@@ -286,9 +287,9 @@ fun AdminScreen(
                     }
                     showBanDialog = null
                     banReason = ""
-                }) { Text(if (user.isBanned) "Разбанить" else "Забанить") }
+                }) { Text(if (user.isBanned) VibeI18n.t("admin_unban") else VibeI18n.t("admin_ban")) }
             },
-            dismissButton = { TextButton(onClick = { showBanDialog = null; banReason = "" }) { Text("Отмена") } }
+            dismissButton = { TextButton(onClick = { showBanDialog = null; banReason = "" }) { Text(VibeI18n.t("cancel")) } }
         )
     }
 }
@@ -312,7 +313,7 @@ private fun UsersTab(
         OutlinedTextField(
             value = searchQuery,
             onValueChange = onSearchChange,
-            label = { Text("Поиск...") },
+            label = { Text(VibeI18n.t("admin_search")) },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             shape = RoundedCornerShape(12.dp)
@@ -322,12 +323,12 @@ private fun UsersTab(
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             FilterChip(selected = true, onClick = {},
-                label = { Text("Все (${users.size})") },
+                label = { Text("${VibeI18n.t("all")} (${users.size})") },
                 colors = FilterChipDefaults.filterChipColors(selectedContainerColor = MaterialTheme.colorScheme.primaryContainer))
             FilterChip(selected = false, onClick = {},
-                label = { Text("Онлайн (${users.count { it.isOnline }})") })
+                label = { Text("${VibeI18n.t("admin_online")} (${users.count { it.isOnline }})") })
             FilterChip(selected = false, onClick = {},
-                label = { Text("Админы (${users.count { it.role != "user" }})") })
+                label = { Text("${VibeI18n.t("admin_admins")} (${users.count { it.role != "user" }})") })
         }
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -359,15 +360,15 @@ private fun UsersTab(
                                 Text(user.displayName, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
                                 if (user.isBanned) {
                                     Spacer(modifier = Modifier.width(6.dp))
-                                    Text("ЗАБАНЕН", style = MaterialTheme.typography.labelSmall,
+                                    Text(VibeI18n.t("admin_banned_label"), style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
                                 }
                             }
                             Text(
                                 when (user.role) {
-                                    "super_admin" -> "Создатель"
-                                    "admin" -> "Администратор"
-                                    else -> "Пользователь"
+                                    "super_admin" -> VibeI18n.t("admin_role_creator")
+                                    "admin" -> VibeI18n.t("admin_role_admin_name")
+                                    else -> VibeI18n.t("admin_role_user_name")
                                 },
                                 style = MaterialTheme.typography.bodySmall,
                                 color = when (user.role) {
@@ -386,7 +387,7 @@ private fun UsersTab(
                                     IconButton(onClick = { onPromote(user) }, modifier = Modifier.size(32.dp)) {
                                         Icon(
                                             if (user.role == "admin") Icons.Default.Person else Icons.Default.Security,
-                                            contentDescription = if (user.role == "admin") "Снять админа" else "В админы",
+                                            contentDescription = if (user.role == "admin") VibeI18n.t("admin_remove_admin") else VibeI18n.t("admin_make_admin"),
                                             modifier = Modifier.size(18.dp),
                                             tint = if (user.role == "admin") MaterialTheme.colorScheme.error
                                             else MaterialTheme.colorScheme.primary
@@ -399,7 +400,7 @@ private fun UsersTab(
                                     }, modifier = Modifier.size(32.dp)) {
                                         Icon(
                                             if (user.isBanned) Icons.Default.Unpublished else Icons.Default.Block,
-                                            contentDescription = if (user.isBanned) "Разбанить" else "Забанить",
+                                            contentDescription = if (user.isBanned) VibeI18n.t("admin_unban") else VibeI18n.t("admin_ban"),
                                             modifier = Modifier.size(18.dp),
                                             tint = if (user.isBanned) MaterialTheme.colorScheme.primary
                                             else MaterialTheme.colorScheme.error
@@ -421,14 +422,14 @@ private fun StatsTab(stats: AdminStats) {
         modifier = Modifier.fillMaxSize().padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text("Статистика", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Text(VibeI18n.t("admin_stats"), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            StatCard("Всего", "${stats.totalUsers}", Modifier.weight(1f))
-            StatCard("Онлайн", "${stats.onlineUsers}", Modifier.weight(1f))
+            StatCard(VibeI18n.t("admin_total"), "${stats.totalUsers}", Modifier.weight(1f))
+            StatCard(VibeI18n.t("admin_online"), "${stats.onlineUsers}", Modifier.weight(1f))
         }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            StatCard("Админы", "${stats.adminCount}", Modifier.weight(1f))
-            StatCard("Забанены", "${stats.bannedCount}", Modifier.weight(1f))
+            StatCard(VibeI18n.t("admin_admins"), "${stats.adminCount}", Modifier.weight(1f))
+            StatCard(VibeI18n.t("admin_banned"), "${stats.bannedCount}", Modifier.weight(1f))
         }
     }
 }
@@ -449,7 +450,7 @@ private fun StatCard(label: String, value: String, modifier: Modifier = Modifier
 private fun LogsTab(logs: List<AdminLog>) {
     if (logs.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("Нет записей", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(VibeI18n.t("admin_no_records"), color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         return
     }
@@ -479,10 +480,10 @@ private fun LogsTab(logs: List<AdminLog>) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             when (log.action) {
-                                "ban" -> "Забанил"
-                                "unban" -> "Разбанил"
-                                "promote" -> "Назначил админом"
-                                "demote" -> "Снял с админа"
+                                "ban" -> VibeI18n.t("admin_log_banned")
+                                "unban" -> VibeI18n.t("admin_log_unbanned")
+                                "promote" -> VibeI18n.t("admin_log_promoted")
+                                "demote" -> VibeI18n.t("admin_log_demoted")
                                 else -> log.action
                             },
                             style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium
