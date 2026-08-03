@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import com.vibe.ui.e2e.AISecuritySummary
 import com.vibe.ui.e2e.E2EEngine
 import com.vibe.ui.e2e.ThreatLevel
+import com.vibe.ui.i18n.VibeI18n
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,7 +63,7 @@ fun SecuritySettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Безопасность") },
+                title = { Text(VibeI18n.t("security")) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
@@ -96,14 +97,14 @@ fun SecuritySettingsScreen(
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
-                            "End-to-End шифрование",
+                            VibeI18n.t("e2e_encryption"),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
                     }
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        "Ваши сообщения зашифрованы алгоритмом AES-256-GCM с Double Ratchet. Даже мы не можем их прочитать.",
+                        VibeI18n.t("e2e_desc"),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
@@ -165,22 +166,22 @@ fun SecuritySettingsScreen(
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
-                            "Биометрический профиль",
+                            VibeI18n.t("biometric_profile"),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             if (summary.hasBiometricProfile) {
-                                "Профиль создан. Уверенность: ${(summary.biometricConfidence * 100).toInt()}%"
+                                VibeI18n.t("biometric_created")
                             } else {
-                                "Профиль формируется. Нужно больше данных."
+                                VibeI18n.t("biometric_not_created")
                             },
                             style = MaterialTheme.typography.bodyMedium
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            "AI анализирует ваш стиль печати для обнаружения подозрительной активности.",
+                            VibeI18n.t("biometric_analyzing"),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -198,7 +199,7 @@ fun SecuritySettingsScreen(
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
-                            "Ротация ключей",
+                            VibeI18n.t("key_rotation"),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
@@ -213,7 +214,7 @@ fun SecuritySettingsScreen(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            "AI определяет оптимальный момент для ротации ключей на основе угроз и условий.",
+                            VibeI18n.t("ai_key_rotation"),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -232,7 +233,7 @@ fun SecuritySettingsScreen(
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text(
-                                "Рекомендация",
+                                VibeI18n.t("recommendations"),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
@@ -273,10 +274,10 @@ private fun getThreatIcon(level: ThreatLevel): ImageVector {
 @Composable
 private fun getThreatText(level: ThreatLevel): String {
     return when (level) {
-        ThreatLevel.NONE -> "Без угроз"
-        ThreatLevel.LOW -> "Низкий уровень"
-        ThreatLevel.MEDIUM -> "Средний уровень"
-        ThreatLevel.HIGH -> "Высокий уровень"
-        ThreatLevel.CRITICAL -> "Критический уровень"
+        ThreatLevel.NONE -> VibeI18n.t("threat_none")
+        ThreatLevel.LOW -> VibeI18n.t("threat_low")
+        ThreatLevel.MEDIUM -> VibeI18n.t("threat_medium")
+        ThreatLevel.HIGH -> VibeI18n.t("threat_high")
+        ThreatLevel.CRITICAL -> VibeI18n.t("threat_critical")
     }
 }

@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.vibe.ui.i18n.VibeI18n
 import com.vibe.ui.network.ServerConfig
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -47,7 +48,7 @@ fun SettingsPrivacyScreen(onBack: () -> Unit) {
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Конфиденциальность", fontWeight = FontWeight.Bold) },
+                title = { Text(VibeI18n.t("privacy"), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
@@ -67,17 +68,17 @@ fun SettingsPrivacyScreen(onBack: () -> Unit) {
         ) {
             Spacer(modifier = Modifier.height(16.dp))
 
-            PrivacyToggle("Показывать статус «в сети»", showOnline, {
+            PrivacyToggle(VibeI18n.t("show_online"), showOnline, {
                 showOnline = it; serverConfig.setPrivacyOnline(it)
             })
-            PrivacyToggle("Читать уведомления (галочки)", readReceipts, {
+            PrivacyToggle(VibeI18n.t("read_receipts"), readReceipts, {
                 readReceipts = it; serverConfig.setPrivacyReceipts(it)
             })
 
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                "Блокировка приложения",
+                VibeI18n.t("app_lock"),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
@@ -85,7 +86,7 @@ fun SettingsPrivacyScreen(onBack: () -> Unit) {
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                "Скоро: вход по PIN-коду и биометрии",
+                VibeI18n.t("pin_coming_soon"),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

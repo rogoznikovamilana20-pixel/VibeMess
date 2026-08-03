@@ -43,6 +43,7 @@ import com.vibe.ui.compose.components.VibeButtonSize
 import com.vibe.ui.data.ProfileRepository
 import com.vibe.ui.data.db.VibeDatabase
 import com.vibe.ui.data.db.entity.AccountEntity
+import com.vibe.ui.i18n.VibeI18n
 import com.vibe.ui.network.ServerConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -80,13 +81,13 @@ fun RegisterScreen(
     val emailValid = android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
 
     fun validate(): String? {
-        if (name.isBlank()) return "Введите имя"
-        if (username.isBlank()) return "Введите имя пользователя"
+        if (name.isBlank()) return VibeI18n.t("enter_name")
+        if (username.isBlank()) return VibeI18n.t("enter_username")
         if (!username.matches(Regex("^[a-zA-Z0-9_]{3,32}$")))
-            return "Имя пользователя: 3–32 символа, буквы, цифры, _"
-        if (email.isBlank() || !emailValid) return "Введите корректный email"
-        if (password.length < 6) return "Пароль должен быть не короче 6 символов"
-        if (password != confirmPassword) return "Пароли не совпадают"
+            return VibeI18n.t("username_hint")
+        if (email.isBlank() || !emailValid) return VibeI18n.t("invalid_email")
+        if (password.length < 6) return VibeI18n.t("password_short")
+        if (password != confirmPassword) return VibeI18n.t("passwords_no_match")
         return null
     }
 
@@ -94,7 +95,7 @@ fun RegisterScreen(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Регистрация", fontWeight = FontWeight.Bold) },
+                title = { Text(VibeI18n.t("register_title"), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
@@ -116,7 +117,7 @@ fun RegisterScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Создайте аккаунт Vibe",
+                text = VibeI18n.t("create_account_title"),
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground
@@ -125,7 +126,7 @@ fun RegisterScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Аккаунт хранится локально в защищённой базе данных",
+                text = VibeI18n.t("create_account_desc"),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -135,7 +136,7 @@ fun RegisterScreen(
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it; error = null },
-                label = { Text("Имя") },
+                label = { Text(VibeI18n.t("first_name")) },
                 leadingIcon = { Icon(Icons.Default.Person, null) },
                 singleLine = true,
                 shape = RoundedCornerShape(12.dp),
@@ -147,7 +148,7 @@ fun RegisterScreen(
             OutlinedTextField(
                 value = username,
                 onValueChange = { username = it.lowercase(Locale.ROOT).replace(" ", ""); error = null },
-                label = { Text("Имя пользователя") },
+                label = { Text(VibeI18n.t("username")) },
                 leadingIcon = { Icon(Icons.Default.AlternateEmail, null) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
@@ -166,7 +167,7 @@ fun RegisterScreen(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
                 isError = email.isNotBlank() && !emailValid,
                 supportingText = if (email.isNotBlank() && !emailValid) {
-                    { Text("Некорректный email") }
+                    { Text(VibeI18n.t("incorrect_email")) }
                 } else null,
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.fillMaxWidth()
@@ -177,7 +178,7 @@ fun RegisterScreen(
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it; error = null },
-                label = { Text("Пароль") },
+                label = { Text(VibeI18n.t("password")) },
                 leadingIcon = { Icon(Icons.Default.Lock, null) },
                 singleLine = true,
                 visualTransformation = PasswordVisualTransformation(),
@@ -191,7 +192,7 @@ fun RegisterScreen(
             OutlinedTextField(
                 value = confirmPassword,
                 onValueChange = { confirmPassword = it; error = null },
-                label = { Text("Повторите пароль") },
+                label = { Text(VibeI18n.t("confirm_password")) },
                 leadingIcon = { Icon(Icons.Default.Lock, null) },
                 singleLine = true,
                 visualTransformation = PasswordVisualTransformation(),
@@ -212,7 +213,7 @@ fun RegisterScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             VibeButton(
-                text = if (registering) "Создание..." else "Зарегистрироваться",
+                text = if (registering) VibeI18n.t("create_account_loading") else VibeI18n.t("register"),
                 onClick = {
                     val validationError = validate()
                     if (validationError != null) {
@@ -226,10 +227,10 @@ fun RegisterScreen(
                                 val db = VibeDatabase.getDatabase(context)
                                 val trimmedEmail = email.trim().lowercase(Locale.ROOT)
                                 if (db.accountDao().getByEmail(trimmedEmail) != null) {
-                                    error = "Аккаунт с таким email уже существует"
+                                    error = VibeI18n.t("email_exists")
                                     null
                                 } else if (db.accountDao().getByUsername(username) != null) {
-                                    error = "Имя пользователя занято"
+                                    error = VibeI18n.t("username_taken")
                                     null
                                 } else {
                                     val vibeId = randomVibeId()
@@ -245,7 +246,7 @@ fun RegisterScreen(
                                 }
                             }.getOrElse { e ->
                                 android.util.Log.w("Register", "registration failed", e)
-                                error = "Не удалось сохранить аккаунт"
+                                error = VibeI18n.t("save_failed")
                                 null
                             }
                         }
@@ -299,7 +300,7 @@ fun RegisterScreen(
                                     com.vibe.ui.e2e.E2EEngine.generateUserKeys()
                                 }
 
-                                Toast.makeText(context, "Аккаунт создан", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, VibeI18n.t("account_created"), Toast.LENGTH_SHORT).show()
                                 onComplete(pair.second)
                             } else {
                                 // Email confirmation required or Supabase unavailable
@@ -326,14 +327,14 @@ fun RegisterScreen(
                                         )
                                     }
 
-                                    Toast.makeText(context, "Аккаунт создан", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, VibeI18n.t("account_created"), Toast.LENGTH_SHORT).show()
                                     onComplete(pair.second)
                                 } else {
                                     // Fall back to local-only mode
                                     serverConfig.setUserId(pair.first.toString())
                                     serverConfig.setAuthenticated(true)
                                     serverConfig.setVibeId(pair.second)
-                                    Toast.makeText(context, "Аккаунт создан (офлайн режим). Подтвердите email для полного доступа.", Toast.LENGTH_LONG).show()
+                                    Toast.makeText(context, VibeI18n.t("account_created_offline"), Toast.LENGTH_LONG).show()
                                     onComplete(pair.second)
                                 }
                             }

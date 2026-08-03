@@ -29,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.vibe.ui.i18n.VibeI18n
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -39,7 +40,7 @@ fun SettingsAboutScreen(onBack: () -> Unit) {
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("О приложении", fontWeight = FontWeight.Bold) },
+                title = { Text(VibeI18n.t("about"), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
@@ -68,8 +69,8 @@ fun SettingsAboutScreen(onBack: () -> Unit) {
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    AboutRow("Версия", "1.0.0")
-                    AboutRow("Сборка", "afat64 (arm64-v8a)")
+                    AboutRow(VibeI18n.t("version"), "1.0.0")
+                    AboutRow(VibeI18n.t("build"), "afat64 (arm64-v8a)")
                     AboutRow("WebRTC", "M134 (встроен)")
                 }
             }
@@ -86,7 +87,7 @@ fun SettingsAboutScreen(onBack: () -> Unit) {
             ) {
                 Column {
                     AboutLinkRow(
-                        label = "Политика конфиденциальности",
+                        label = VibeI18n.t("privacy_policy"),
                         onClick = { openPrivacyPolicy(context) }
                     )
                     HorizontalDivider(
@@ -94,7 +95,7 @@ fun SettingsAboutScreen(onBack: () -> Unit) {
                         color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
                     )
                     AboutLinkRow(
-                        label = "Пользовательское соглашение",
+                        label = VibeI18n.t("terms_of_service"),
                         onClick = { openTermsOfService(context) }
                     )
                 }
@@ -103,7 +104,7 @@ fun SettingsAboutScreen(onBack: () -> Unit) {
             Spacer(modifier = Modifier.height(12.dp))
 
             Text(
-                "Vibe — безопасный мессенджер с E2EE и видеозвонками",
+                VibeI18n.t("vibe_description"),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -129,7 +130,7 @@ private fun openTermsOfService(context: Context) {
             context.startActivity(intent)
         }
     } catch (_: Exception) {
-        android.widget.Toast.makeText(context, "Документ недоступен", android.widget.Toast.LENGTH_SHORT).show()
+        android.widget.Toast.makeText(context, VibeI18n.t("document_unavailable"), android.widget.Toast.LENGTH_SHORT).show()
     }
 }
 
@@ -137,7 +138,7 @@ private fun openUrl(context: Context, url: String) {
     try {
         context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
     } catch (_: Exception) {
-        android.widget.Toast.makeText(context, "Страница в разработке", android.widget.Toast.LENGTH_SHORT).show()
+        android.widget.Toast.makeText(context, VibeI18n.t("page_in_dev"), android.widget.Toast.LENGTH_SHORT).show()
     }
 }
 

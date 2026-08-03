@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import com.vibe.ui.compose.components.VibeButton
 import com.vibe.ui.compose.components.VibeButtonSize
 import com.vibe.ui.compose.components.VibeInput
+import com.vibe.ui.i18n.VibeI18n
 import com.vibe.ui.network.ServerConfig
 import com.vibe.ui.network.SupabaseAuthManager
 import com.vibe.ui.BuildConfig
@@ -70,11 +71,11 @@ fun AuthScreen(
 
     fun doLogin() {
         if (email.isBlank() || !email.contains("@")) {
-            error = "Введите корректный email"
+            error = VibeI18n.t("invalid_email")
             return
         }
         if (password.length < 6) {
-            error = "Пароль должен быть не менее 6 символов"
+            error = VibeI18n.t("password_short")
             return
         }
         error = null
@@ -113,22 +114,22 @@ fun AuthScreen(
                 onComplete()
             } else {
                 loading = false
-                error = result.error ?: "Ошибка входа"
+                error = result.error ?: VibeI18n.t("login_error")
             }
         }
     }
 
     fun doRegister() {
         if (firstName.isBlank()) {
-            error = "Введите имя"
+            error = VibeI18n.t("enter_name")
             return
         }
         if (email.isBlank() || !email.contains("@")) {
-            error = "Введите корректный email"
+            error = VibeI18n.t("invalid_email")
             return
         }
         if (password.length < 6) {
-            error = "Пароль должен быть не менее 6 символов"
+            error = VibeI18n.t("password_short")
             return
         }
         error = null
@@ -160,19 +161,19 @@ fun AuthScreen(
                 onComplete()
             } else {
                 loading = false
-                error = result.error ?: "Ошибка регистрации"
+                error = result.error ?: VibeI18n.t("register_error")
             }
         }
     }
 
     val title = when (step) {
-        AuthStep.LOGIN -> "Вход в Vibe"
-        AuthStep.REGISTER -> "Создайте аккаунт"
+        AuthStep.LOGIN -> VibeI18n.t("login_title")
+        AuthStep.REGISTER -> VibeI18n.t("create_account_title")
     }
 
     val subtitle = when (step) {
-        AuthStep.LOGIN -> "Войдите с помощью email и пароля"
-        AuthStep.REGISTER -> "Укажите данные для регистрации"
+        AuthStep.LOGIN -> VibeI18n.t("login_subtitle")
+        AuthStep.REGISTER -> VibeI18n.t("register_subtitle")
     }
 
     Scaffold(
@@ -225,7 +226,7 @@ fun AuthScreen(
                     VibeInput(
                         value = firstName,
                         onValueChange = { firstName = it; error = null },
-                        label = "Имя",
+                        label = VibeI18n.t("first_name"),
                         imeAction = ImeAction.Next,
                         error = if (step == AuthStep.REGISTER) error else null,
                         enabled = !loading,
@@ -241,7 +242,7 @@ fun AuthScreen(
                     VibeInput(
                         value = lastName,
                         onValueChange = { lastName = it },
-                        label = "Фамилия (необязательно)",
+                        label = VibeI18n.t("last_name_optional"),
                         imeAction = ImeAction.Next,
                         enabled = !loading,
                         modifier = Modifier.fillMaxWidth()
@@ -272,7 +273,7 @@ fun AuthScreen(
             VibeInput(
                 value = password,
                 onValueChange = { password = it; error = null },
-                label = "Пароль",
+                label = VibeI18n.t("password"),
                 keyboardType = KeyboardType.Password,
                 imeAction = ImeAction.Done,
                 error = if (step == AuthStep.LOGIN && error != null) error else null,
@@ -293,10 +294,10 @@ fun AuthScreen(
 
             VibeButton(
                 text = when {
-                    loading && step == AuthStep.LOGIN -> "Вход..."
-                    loading && step == AuthStep.REGISTER -> "Регистрация..."
-                    step == AuthStep.LOGIN -> "Войти"
-                    else -> "Зарегистрироваться"
+                    loading && step == AuthStep.LOGIN -> VibeI18n.t("login_loading")
+                    loading && step == AuthStep.REGISTER -> VibeI18n.t("register_loading")
+                    step == AuthStep.LOGIN -> VibeI18n.t("login")
+                    else -> VibeI18n.t("register")
                 },
                 onClick = {
                     when (step) {
@@ -317,16 +318,16 @@ fun AuthScreen(
             ) {
                 Text(
                     text = when (step) {
-                        AuthStep.LOGIN -> "Нет аккаунта? "
-                        AuthStep.REGISTER -> "Уже есть аккаунт? "
+                        AuthStep.LOGIN -> VibeI18n.t("no_account")
+                        AuthStep.REGISTER -> VibeI18n.t("has_account")
                     },
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
                     text = when (step) {
-                        AuthStep.LOGIN -> "Зарегистрироваться"
-                        AuthStep.REGISTER -> "Войти"
+                        AuthStep.LOGIN -> VibeI18n.t("register")
+                        AuthStep.REGISTER -> VibeI18n.t("login")
                     },
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium,

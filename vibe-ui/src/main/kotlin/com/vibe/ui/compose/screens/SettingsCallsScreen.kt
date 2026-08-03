@@ -39,6 +39,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.vibe.ui.i18n.VibeI18n
 import com.vibe.ui.network.ServerConfig
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -69,7 +70,7 @@ fun SettingsCallsScreen(onBack: () -> Unit) {
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Звонки", fontWeight = FontWeight.Bold) },
+                title = { Text(VibeI18n.t("calls"), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
@@ -91,18 +92,18 @@ fun SettingsCallsScreen(onBack: () -> Unit) {
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                "Настройки звонков",
+                VibeI18n.t("call_settings"),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            CallsToggle("Шумоподавление", noiseCancellation, {
+            CallsToggle(VibeI18n.t("noise_suppression"), noiseCancellation, {
                 noiseCancellation = it
                 serverConfig.setNoiseCancellation(it)
             })
-            CallsToggle("Высокое качество видео", videoCallQuality, {
+            CallsToggle(VibeI18n.t("high_quality_video"), videoCallQuality, {
                 videoCallQuality = it
                 serverConfig.setVideoHighQuality(it)
             })
@@ -119,13 +120,13 @@ fun SettingsCallsScreen(onBack: () -> Unit) {
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        "Сервер сигналинга (Supabase)",
+                        VibeI18n.t("signaling_server"),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        "Если поля пустые — используется значение из сборки. Оставьте пустым, если не знаете, что указать.",
+                        VibeI18n.t("fields_empty_hint"),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -136,7 +137,7 @@ fun SettingsCallsScreen(onBack: () -> Unit) {
                             signalingUrl = it
                             saved = false
                         },
-                        label = { Text("URL проекта (https://xxx.supabase.co)") },
+                        label = { Text(VibeI18n.t("url_project_hint")) },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true
                     )
@@ -166,13 +167,13 @@ fun SettingsCallsScreen(onBack: () -> Unit) {
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        "TURN сервер",
+                        VibeI18n.t("turn_server"),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        "Нужен для соединения за NAT (symmetric). Публичный TURN (openrelayproject) уже включён по умолчанию — поля можно оставить пустыми. Для продакшена: Cloudflare Calls (бесплатно до 1 ТБ/мес, anycast). Формат turn:host:3478.",
+                        VibeI18n.t("turn_hint"),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -234,12 +235,12 @@ fun SettingsCallsScreen(onBack: () -> Unit) {
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        "Тип звонка по умолчанию",
+                        VibeI18n.t("call_default_mode"),
                         style = MaterialTheme.typography.bodyLarge
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        "Аудиозвонок (можно переключить на видео во время вызова)",
+                        VibeI18n.t("audio_call"),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -249,7 +250,7 @@ fun SettingsCallsScreen(onBack: () -> Unit) {
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                "STUN/TURN серверы",
+                VibeI18n.t("stun_turn_servers"),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )

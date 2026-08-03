@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.vibe.ui.i18n.VibeI18n
 import com.vibe.ui.network.ServerConfig
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -49,7 +50,7 @@ fun SettingsNotificationsScreen(onBack: () -> Unit) {
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Уведомления", fontWeight = FontWeight.Bold) },
+                title = { Text(VibeI18n.t("notifications"), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
@@ -69,23 +70,23 @@ fun SettingsNotificationsScreen(onBack: () -> Unit) {
         ) {
             Spacer(modifier = Modifier.height(16.dp))
 
-            NotifToggle("Сообщения", messagesEnabled, {
+            NotifToggle(VibeI18n.t("notifications_messages"), messagesEnabled, {
                 messagesEnabled = it; serverConfig.setNotifMessages(it)
             })
-            NotifToggle("Групповые чаты", groupEnabled, {
+            NotifToggle(VibeI18n.t("notifications_groups"), groupEnabled, {
                 groupEnabled = it; serverConfig.setNotifGroups(it)
             })
-            NotifToggle("Звук", soundEnabled, {
+            NotifToggle(VibeI18n.t("notifications_sound"), soundEnabled, {
                 soundEnabled = it; serverConfig.setNotifSound(it)
             })
-            NotifToggle("Вибрация", vibrationEnabled, {
+            NotifToggle(VibeI18n.t("notifications_vibration"), vibrationEnabled, {
                 vibrationEnabled = it; serverConfig.setNotifVibration(it)
             })
 
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                "Звук вызова",
+                VibeI18n.t("notifications_call_sound"),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
@@ -93,7 +94,7 @@ fun SettingsNotificationsScreen(onBack: () -> Unit) {
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                "Скоро: выбор мелодии звонка и уровня громкости",
+                VibeI18n.t("notifications_select_melody"),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
