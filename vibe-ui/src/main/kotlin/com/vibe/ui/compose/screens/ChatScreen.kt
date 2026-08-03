@@ -63,6 +63,7 @@ import com.vibe.ui.compose.components.VibeChatBubble
 import com.vibe.ui.feature.chat.ChatScreenUiState
 import com.vibe.ui.feature.chat.ChatScreenViewModel
 import com.vibe.ui.feature.chat.ChatMessage
+import com.vibe.ui.i18n.VibeI18n
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -112,7 +113,7 @@ fun ChatScreen(
                                 color = MaterialTheme.colorScheme.onBackground
                             )
                             Text(
-                                text = "\u0432 \u0441\u0435\u0442\u0438",
+                                text = VibeI18n.t("online"),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = Color(0xFF4ADE80)
                             )
@@ -147,14 +148,14 @@ fun ChatScreen(
                         onDismissRequest = { showChatMenu = false }
                     ) {
                         DropdownMenuItem(
-                            text = { Text("В раздел «Личное»", color = Color(0xFF8D2BFA)) },
+                            text = { Text(VibeI18n.t("personal"), color = Color(0xFF8D2BFA)) },
                             onClick = {
                                 showChatMenu = false
                                 viewModel.setSection(isPersonal = true)
                             }
                         )
                         DropdownMenuItem(
-                            text = { Text("В раздел «Работа»", color = Color(0xFF10B6FA)) },
+                            text = { Text(VibeI18n.t("work"), color = Color(0xFF10B6FA)) },
                             onClick = {
                                 showChatMenu = false
                                 viewModel.setSection(isPersonal = false)
@@ -189,7 +190,7 @@ fun ChatScreen(
                             onValueChange = { messageText = it },
                             modifier = Modifier.weight(1f),
                             placeholder = {
-                                Text("\u0421\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0435...",
+                                Text(VibeI18n.t("type_message"),
                                      color = MaterialTheme.colorScheme.onSurfaceVariant)
                             },
                             textStyle = MaterialTheme.typography.bodyMedium,
@@ -241,7 +242,7 @@ fun ChatScreen(
                         .padding(padding),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430 \u0441\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u0439...",
+                    Text(VibeI18n.t("loading"),
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }

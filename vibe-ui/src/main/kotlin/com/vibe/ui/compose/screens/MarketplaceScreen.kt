@@ -65,7 +65,7 @@ import kotlinx.coroutines.withContext
 import java.text.NumberFormat
 import java.util.Locale
 
-private val categories = listOf("Все", "Услуги", "Товары", "Цифровое", "Обучение", "Другое")
+private val categories = listOf(VibeI18n.t("all"), "Услуги", "Товары", "Цифровое", "Обучение", "Другое")
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -73,7 +73,7 @@ fun MarketplaceScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     val profileRepo = remember { ProfileRepository(context) }
     val db = remember { VibeDatabase.getDatabase(context) }
-    var selectedCategory by remember { mutableStateOf("Все") }
+    var selectedCategory by remember { mutableStateOf(VibeI18n.t("all")) }
     var showDialog by remember { mutableStateOf(false) }
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
@@ -92,7 +92,7 @@ fun MarketplaceScreen(onBack: () -> Unit) {
         Pager(
             config = PagingConfig(pageSize = 20, enablePlaceholders = false)
         ) {
-            if (selectedCategory == "Все") {
+            if (selectedCategory == VibeI18n.t("all")) {
                 db.marketplaceDao().getActiveListingsPaging()
             } else {
                 db.marketplaceDao().getListingsByCategoryPaging(selectedCategory)
@@ -205,16 +205,16 @@ fun MarketplaceScreen(onBack: () -> Unit) {
                                     } else {
                                         android.widget.Toast.makeText(
                                             context,
-                                            "Недостаточно Искр — пополните в профиле",
+                                            VibeI18n.t("not_enough_sparks"),
                                             android.widget.Toast.LENGTH_LONG
                                         ).show()
                                     }
                                 }
                                 buyListing = null
-                            }) { Text("Купить") }
+                            }) { Text(VibeI18n.t("buy")) }
                         },
                         dismissButton = {
-                            TextButton(onClick = { buyListing = null }) { Text("Отмена") }
+                            TextButton(onClick = { buyListing = null }) { Text(VibeI18n.t("cancel")) }
                         }
                     )
                 }

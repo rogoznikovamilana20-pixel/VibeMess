@@ -71,6 +71,7 @@ import com.vibe.ui.compose.components.VibeButtonVariant
 import com.vibe.ui.data.AchievementManager
 import com.vibe.ui.data.ProfileRepository
 import com.vibe.ui.di.VibeContainer
+import com.vibe.ui.i18n.VibeI18n
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -145,7 +146,7 @@ fun ProfileScreen(
                     type = "text/plain"
                     putExtra(Intent.EXTRA_TEXT, shareTarget)
                 }
-                context.startActivity(Intent.createChooser(send, "Поделиться профилем"))
+                context.startActivity(Intent.createChooser(send, VibeI18n.t("profile_share")))
                 showQr = false
             }
         )
@@ -155,7 +156,7 @@ fun ProfileScreen(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Профиль", fontWeight = FontWeight.Bold) },
+                title = { Text(VibeI18n.t("profile"), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
@@ -172,7 +173,7 @@ fun ProfileScreen(
                             } else {
                                 android.widget.Toast.makeText(
                                     context,
-                                    "Профиль ещё не готов к публикации",
+                                    VibeI18n.t("profile_not_ready"),
                                     android.widget.Toast.LENGTH_SHORT
                                 ).show()
                             }
@@ -192,7 +193,7 @@ fun ProfileScreen(
                 modifier = Modifier.fillMaxSize().padding(padding),
                 contentAlignment = Alignment.Center
             ) {
-                Text("Загрузка...", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(VibeI18n.t("loading"), color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         } else {
             Column(
@@ -294,8 +295,8 @@ fun ProfileScreen(
                 if (!isOwnProfile) {
                     Spacer(modifier = Modifier.height(16.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        VibeButton(text = "Написать", onClick = { /* TODO: navigate to chat */ }, size = VibeButtonSize.MEDIUM)
-                        VibeButton(text = "Позвонить", onClick = { /* TODO: start call */ },
+                        VibeButton(text = VibeI18n.t("write"), onClick = { /* TODO: navigate to chat */ }, size = VibeButtonSize.MEDIUM)
+                        VibeButton(text = VibeI18n.t("call"), onClick = { /* TODO: start call */ },
                             variant = VibeButtonVariant.SECONDARY, size = VibeButtonSize.MEDIUM)
                     }
                 }
@@ -315,7 +316,7 @@ fun ProfileScreen(
                             Icon(Icons.Default.WorkspacePremium, null,
                                 tint = Color(0xFFF59E0B), modifier = Modifier.size(20.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Репутация",
+                            Text(VibeI18n.t("reputation"),
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold)
                         }
@@ -324,8 +325,8 @@ fun ProfileScreen(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceEvenly
                         ) {
-                            ReputationBadge("Подтверждён", "✓", Color(0xFF4ADE80))
-                            ReputationBadge("Активность", "Высокая", Color(0xFF8D2BFA))
+                            ReputationBadge(VibeI18n.t("verified"), "✓", Color(0xFF4ADE80))
+                            ReputationBadge(VibeI18n.t("activity"), "Высокая", Color(0xFF8D2BFA))
                             ReputationBadge("Доверие", "85%", Color(0xFFF59E0B))
                         }
                     }
@@ -360,7 +361,7 @@ fun ProfileScreen(
                         }
                         Spacer(modifier = Modifier.width(12.dp))
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Искры",
+                            Text(VibeI18n.t("sparks_label"),
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold)
                             Text("${sparkState.value.balance} — покупка и вывод",
@@ -389,7 +390,7 @@ fun ProfileScreen(
                             Icon(Icons.Default.Badge, null,
                                 tint = Color(0xFF8D2BFA), modifier = Modifier.size(20.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Достижения",
+                            Text(VibeI18n.t("achievements"),
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold)
                         }
@@ -415,7 +416,7 @@ fun ProfileScreen(
                             }
                         }
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text("$unlockedCount из $totalCount достижений получено",
+                        Text("$unlockedCount ${VibeI18n.t("achievements_of")} $totalCount ${VibeI18n.t("achievements_opened")}",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
@@ -478,17 +479,17 @@ private fun QrShareDialog(
                 }
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
-                    text = "Отсканируйте QR-код, чтобы открыть профиль",
+                    text = VibeI18n.t("qr_scan"),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         },
         confirmButton = {
-            TextButton(onClick = onShare) { Text("Поделиться") }
+            TextButton(onClick = onShare) { Text(VibeI18n.t("share")) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Закрыть") }
+            TextButton(onClick = onDismiss) { Text(VibeI18n.t("close")) }
         }
     )
 }

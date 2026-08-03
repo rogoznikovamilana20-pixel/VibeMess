@@ -110,7 +110,7 @@ fun TimelineScreen(onBack: () -> Unit) {
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Лента", fontWeight = FontWeight.Bold) },
+                title = { Text(VibeI18n.t("feed"), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
@@ -128,7 +128,7 @@ fun TimelineScreen(onBack: () -> Unit) {
                 newPostText = ""
                 showDialog = true
             }) {
-                Icon(Icons.Default.Add, "Новый пост")
+                Icon(Icons.Default.Add, VibeI18n.t("new_post"))
             }
         }
     ) { padding ->
@@ -144,10 +144,10 @@ fun TimelineScreen(onBack: () -> Unit) {
                     modifier = Modifier.size(48.dp),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(modifier = Modifier.height(16.dp))
-                Text("Пока нет постов",
+                Text(VibeI18n.t("empty_timeline"),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("Нажмите + чтобы создать первый пост",
+                Text(VibeI18n.t("tap_plus_to_create"),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
