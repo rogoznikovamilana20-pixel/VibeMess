@@ -430,33 +430,64 @@ class DoubleRatchet {
 /**
  * Ratchet key pair for Diffie-Hellman operations.
  */
-data class RatchetKeyPair(
+class RatchetKeyPair(
     val publicKey: ByteArray,
     val privateKey: ByteArray
-)
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is RatchetKeyPair) return false
+        return publicKey.contentEquals(other.publicKey) && privateKey.contentEquals(other.privateKey)
+    }
+    override fun hashCode(): Int = publicKey.contentHashCode() * 31 + privateKey.contentHashCode()
+    override fun toString(): String = "RatchetKeyPair(pubKey=${publicKey.contentToString()})"
+}
 
 /**
  * Encrypted message with ratchet metadata.
  */
-data class RatchetMessage(
+class RatchetMessage(
     val header: RatchetHeader,
     val ciphertext: ByteArray,
     val iv: ByteArray
-)
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is RatchetMessage) return false
+        return header == other.header && ciphertext.contentEquals(other.ciphertext) && iv.contentEquals(other.iv)
+    }
+    override fun hashCode(): Int = header.hashCode() * 31 + ciphertext.contentHashCode() + iv.contentHashCode()
+    override fun toString(): String = "RatchetMessage(header=$header, cipherLen=${ciphertext.size})"
+}
 
 /**
  * Ratchet header sent with each message.
  */
-data class RatchetHeader(
+class RatchetHeader(
     val senderRatchetPublicKey: ByteArray?,
     val previousSendingChainLength: Int,
     val messageNumber: Int
-)
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is RatchetHeader) return false
+        return senderRatchetPublicKey.contentEquals(other.senderRatchetPublicKey)
+            && previousSendingChainLength == other.previousSendingChainLength
+            && messageNumber == other.messageNumber
+    }
+    override fun hashCode(): Int {
+        var result = (senderRatchetPublicKey?.contentHashCode() ?: 0)
+        result = 31 * result + previousSendingChainLength
+        result = 31 * result + messageNumber
+        return result
+    }
+    override fun toString(): String = "RatchetHeader(prevLen=$previousSendingChainLength, msgNum=$messageNumber)"
+}
 
 /**
  * Serializable ratchet state for persistence.
  */
-data class RatchetState(
+class RatchetState(
     val rootKey: ByteArray?,
     val sendingChainKey: ByteArray?,
     val receivingChainKey: ByteArray?,
@@ -466,4 +497,28 @@ data class RatchetState(
     val currentRatchetKeyPair: RatchetKeyPair?,
     val remoteRatchetPublicKey: ByteArray?,
     val skippedMessageKeys: Map<String, ByteArray>
-)
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is RatchetState) return false
+        return rootKey.contentEquals(other.rootKey)
+            && sendingChainKey.contentEquals(other.sendingChainKey)
+            && receivingChainKey.contentEquals(other.receivingChainKey)
+            && sendingRatchetCounter == other.sendingRatchetCounter
+            && receivingRatchetCounter == other.receivingRatchetCounter
+            && previousSendingRatchetCounter == other.previousSendingRatchetCounter
+            && currentRatchetKeyPair == other.currentRatchetKeyPair
+            && remoteRatchetPublicKey.contentEquals(other.remoteRatchetPublicKey)
+    }
+    override fun hashCode(): Int {
+        var result = (rootKey?.contentHashCode() ?: 0)
+        result = 31 * result + (sendingChainKey?.contentHashCode() ?: 0)
+        result = 31 * result + (receivingChainKey?.contentHashCode() ?: 0)
+        result = 31 * result + sendingRatchetCounter
+        result = 31 * result + receivingRatchetCounter
+        result = 31 * result + previousSendingRatchetCounter
+        result = 31 * result + (currentRatchetKeyPair?.hashCode() ?: 0)
+        result = 31 * result + (remoteRatchetPublicKey?.contentHashCode() ?: 0)
+        return result
+    }
+}

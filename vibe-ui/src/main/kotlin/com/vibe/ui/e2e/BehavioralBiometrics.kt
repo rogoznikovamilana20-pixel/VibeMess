@@ -232,18 +232,19 @@ class BehavioralBiometrics {
 
 /**
  * User behavioral profile.
+ * Not a data class because mutable collections in equals/hashCode is incorrect.
  */
-data class UserProfile(
-    val typingSpeeds: MutableList<Long> = mutableListOf(),
-    val pauseDurations: MutableList<Long> = mutableListOf(),
-    val activeHours: MutableList<Int> = mutableListOf(),
-    val emojiRatios: MutableList<Double> = mutableListOf(),
-    val hourDistribution: MutableMap<Int, Int> = mutableMapOf(),
-    var avgTypingSpeed: Double = 0.0,
-    var stdDevTypingSpeed: Double = 0.0,
-    var avgPauseDuration: Double = 0.0,
+class UserProfile {
+    val typingSpeeds: MutableList<Long> = mutableListOf()
+    val pauseDurations: MutableList<Long> = mutableListOf()
+    val activeHours: MutableList<Int> = mutableListOf()
+    val emojiRatios: MutableList<Double> = mutableListOf()
+    val hourDistribution: MutableMap<Int, Int> = mutableMapOf()
+    var avgTypingSpeed: Double = 0.0
+    var stdDevTypingSpeed: Double = 0.0
+    var avgPauseDuration: Double = 0.0
     var avgEmojiRatio: Double = 0.0
-)
+}
 
 /**
  * Biometric analysis result.
