@@ -57,6 +57,7 @@ import kotlin.math.roundToInt
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.vibe.ui.i18n.VibeI18n
 import com.vibe.ui.compose.components.ShowToast
 import com.vibe.ui.compose.components.SkeletonMessageList
 import com.vibe.ui.compose.components.AvatarPlaceholder
@@ -97,7 +98,7 @@ fun SupabaseChatScreen(
                         val typingUsers by viewModel.typingUsers.collectAsState()
                         if (typingUsers.isNotEmpty()) {
                             Text(
-                                "печатает...",
+                                VibeI18n.t("typing"),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.primary
                             )
@@ -137,7 +138,7 @@ fun SupabaseChatScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            "Ответ: ${reply.content.take(40)}${if (reply.content.length > 40) "..." else ""}",
+                            VibeI18n.t("reply_prefix") + reply.content.take(40) + if (reply.content.length > 40) "..." else "",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.weight(1f)
@@ -161,7 +162,7 @@ fun SupabaseChatScreen(
                         },
                         modifier = Modifier.weight(1f),
                         placeholder = {
-                            Text("Сообщение...", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(VibeI18n.t("message") + "...", color = MaterialTheme.colorScheme.onSurfaceVariant)
                         },
                         textStyle = MaterialTheme.typography.bodyMedium,
                         shape = RoundedCornerShape(24.dp),

@@ -32,6 +32,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.vibe.ui.focus.FocusSpace
+import com.vibe.ui.i18n.VibeI18n
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -145,31 +146,31 @@ private fun ChatActionDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Действия с чатом") },
+        title = { Text(VibeI18n.t("chat_actions_title")) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (currentSpace != FocusSpace.PERSONAL) {
                     ActionRow(
                         icon = Icons.Default.Person,
-                        label = "Отправить в личное",
+                        label = VibeI18n.t("send_to_personal"),
                         onClick = onMoveToPersonal
                     )
                 }
                 if (currentSpace != FocusSpace.WORK) {
                     ActionRow(
                         icon = Icons.Default.BusinessCenter,
-                        label = "Отправить в работу",
+                        label = VibeI18n.t("send_to_work"),
                         onClick = onMoveToWork
                     )
                 }
                 ActionRow(
                     icon = Icons.Default.Edit,
-                    label = "Переименовать",
+                    label = VibeI18n.t("rename_chat"),
                     onClick = onRename
                 )
                 ActionRow(
                     icon = Icons.Default.Delete,
-                    label = "Удалить",
+                    label = VibeI18n.t("delete"),
                     onClick = onDelete
                 )
             }
@@ -177,7 +178,7 @@ private fun ChatActionDialog(
         confirmButton = {},
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Отмена")
+                Text(VibeI18n.t("cancel"))
             }
         }
     )

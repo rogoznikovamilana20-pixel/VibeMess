@@ -245,7 +245,7 @@ fun SupabaseMainScreen(
                 FilterChip(
                     selected = selectedFilter == "personal",
                     onClick = { selectedFilter = "personal" },
-                    label = { Text("Личные") },
+                    label = { Text(VibeI18n.t("personal_chats")) },
                     leadingIcon = { Icon(Icons.Default.Person, null, modifier = Modifier.size(18.dp)) },
                     colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = MaterialTheme.colorScheme.primary,
@@ -255,7 +255,7 @@ fun SupabaseMainScreen(
                 FilterChip(
                     selected = selectedFilter == "group",
                     onClick = { selectedFilter = "group" },
-                    label = { Text("Группы") },
+                    label = { Text(VibeI18n.t("group_chats")) },
                     leadingIcon = { Icon(Icons.Default.Group, null, modifier = Modifier.size(18.dp)) },
                     colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = MaterialTheme.colorScheme.primary,
@@ -284,7 +284,7 @@ fun SupabaseMainScreen(
                                 tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)
                             )
                             Text(
-                                "Нет чатов",
+                                VibeI18n.t("no_chats_yet"),
                                 style = MaterialTheme.typography.titleLarge,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )

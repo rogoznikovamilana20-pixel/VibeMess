@@ -43,6 +43,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.vibe.ui.BuildConfig
+import com.vibe.ui.i18n.VibeI18n
 import com.vibe.ui.compose.components.DateUtils
 import com.vibe.ui.compose.components.SkeletonMessageList
 import com.vibe.ui.network.ServerConfig
@@ -65,7 +66,7 @@ fun SupabaseSearchScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Поиск сообщений") },
+                title = { Text(VibeI18n.t("search_messages")) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
@@ -109,7 +110,7 @@ fun SupabaseSearchScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
-                placeholder = { Text("Поиск...") },
+                placeholder = { Text(VibeI18n.t("search_placeholder")) },
                 leadingIcon = { Icon(Icons.Default.Search, "Search") },
                 shape = RoundedCornerShape(24.dp),
                 colors = TextFieldDefaults.colors(
@@ -141,7 +142,7 @@ fun SupabaseSearchScreen(
                                 tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
                             )
                             Text(
-                                "Начните вводить текст",
+                                VibeI18n.t("start_typing_hint"),
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -154,7 +155,7 @@ fun SupabaseSearchScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            "Ничего не найдено",
+                            VibeI18n.t("no_search_results"),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -169,7 +170,7 @@ fun SupabaseSearchScreen(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clickable { onOpenChat(msg.chatId, "Чат") }
+                                    .clickable { onOpenChat(msg.chatId, VibeI18n.t("chat")) }
                                     .padding(horizontal = 16.dp, vertical = 12.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {

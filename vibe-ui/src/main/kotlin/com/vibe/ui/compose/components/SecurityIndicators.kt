@@ -21,6 +21,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.vibe.ui.e2e.ThreatLevel
+import com.vibe.ui.i18n.VibeI18n
 
 /**
  * Threat level indicator for chat list.
@@ -73,11 +74,11 @@ fun SecurityBadge(
     }
 
     val text = when {
-        threatLevel == ThreatLevel.CRITICAL -> "УГРОЗА"
-        threatLevel == ThreatLevel.HIGH -> "Подозрительно"
-        threatLevel == ThreatLevel.MEDIUM -> "Внимание"
+        threatLevel == ThreatLevel.CRITICAL -> VibeI18n.t("threat_level")
+        threatLevel == ThreatLevel.HIGH -> VibeI18n.t("suspicious")
+        threatLevel == ThreatLevel.MEDIUM -> VibeI18n.t("attention")
         isEncrypted -> "E2EE"
-        else -> "Не зашифрован"
+        else -> VibeI18n.t("not_encrypted_label")
     }
 
     Surface(
@@ -106,7 +107,7 @@ fun EncryptionIndicator(
     
     Icon(
         imageVector = Icons.Default.CheckCircle,
-        contentDescription = if (isEncrypted) "Зашифровано" else "Не зашифровано",
+        contentDescription = if (isEncrypted) VibeI18n.t("encrypted_label") else VibeI18n.t("not_encrypted_label"),
         modifier = modifier.size(14.dp),
         tint = color
     )

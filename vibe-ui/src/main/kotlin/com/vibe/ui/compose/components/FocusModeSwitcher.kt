@@ -38,6 +38,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.vibe.ui.focus.FocusModeManager
 import com.vibe.ui.focus.FocusSpace
+import com.vibe.ui.i18n.VibeI18n
 
 @Composable
 fun FocusModeSwitcher(
@@ -65,7 +66,7 @@ fun FocusModeSwitcher(
                     .clickable { showPanel = false }
             ) {
                 Text(
-                    "Пространство",
+                    VibeI18n.t("space"),
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -99,9 +100,9 @@ fun FocusModeSwitcher(
 
                 Text(
                     if (currentSpace == FocusSpace.PERSONAL)
-                        "Личные чаты · Фиолетовый режим"
+                        VibeI18n.t("personal_space_desc")
                     else
-                        "Рабочие чаты · Синий режим",
+                        VibeI18n.t("work_space_desc"),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
