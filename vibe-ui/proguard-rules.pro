@@ -13,3 +13,12 @@
 
 # Lottie parses JSON compositions at runtime (no class reflection), keep the API surface used via composition
 -dontwarn com.airbnb.lottie.**
+
+# Bouncy Castle — keep ML-KEM/ML-DSA provider classes and crypto engine internals
+-keep class org.bouncycastle.pqc.crypto.mlkem.** { *; }
+-keep class org.bouncycastle.pqc.crypto.dilithium.** { *; }
+-keep class org.bouncycastle.jcajce.provider.asymmetric.mlkem.** { *; }
+-keep class org.bouncycastle.jcajce.provider.asymmetric.MLDSA** { *; }
+-keep class org.bouncycastle.jcajce.spec.KTSParameterSpec** { *; }
+-keep class org.bouncycastle.jcajce.spec.KEMExtractSpec** { *; }
+-dontwarn org.bouncycastle.pqc.**

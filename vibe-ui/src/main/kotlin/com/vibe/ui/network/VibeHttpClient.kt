@@ -198,7 +198,7 @@ class VibeHttpClient(private val serverConfig: ServerConfig) {
 
     suspend fun createChat(title: String, type: String = "private"): ChatResponse? {
         val body = JSONObject().apply {
-            put("type", "create_chat")
+            put("method", "create_chat")
             put("userId", serverConfig.getUserId())
             put("title", title)
             put("type", type)

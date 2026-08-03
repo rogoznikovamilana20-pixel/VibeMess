@@ -430,7 +430,7 @@ object SupabaseClient {
         try {
             val myId = getUserIdFromToken(authToken)
             val request = Request.Builder()
-                .url("$supabaseUrl/rest/v1/rpc/search_messages?p_query=$query&p_user_id=$myId&p_limit=$limit")
+                .url("$supabaseUrl/rest/v1/rpc/search_messages?p_query=${java.net.URLEncoder.encode(query, "UTF-8")}&p_user_id=$myId&p_limit=$limit")
                 .addHeader("apikey", anonKey)
                 .addHeader("Authorization", "Bearer $authToken")
                 .addHeader("Content-Type", "application/json")
