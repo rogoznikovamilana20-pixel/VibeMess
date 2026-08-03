@@ -26,6 +26,7 @@ local.properties
 *.keystore
 *.jks
 *.bks
+*.pem
 /build/
 TMessagesProj/.cxx/
 tools/sirin/.venv/

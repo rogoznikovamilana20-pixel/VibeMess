@@ -9,9 +9,10 @@ Sidecar/Bridge pattern. Telegram core (`TMessagesProj`) untouched. Vibe-логи
 ## Modules
 | Module | Type | Description |
 |--------|------|-------------|
-| `:TMessagesProj` | library | Telegram core (Java) |
+| `:TMessagesProj` | library | Telegram core (Java) — подлежит удалению (миграция на свой движок) |
 | `:TMessagesProj_App` | app | Main Telegram entry point |
 | `:vibe-common` | lib | Shared utils, logging, result types |
+| `:vibe-engine-api` | lib | Engine contract: `ITelegramGateway` (8 интерфейсов / 35 методов) + модели, без TMessagesProj |
 | `:vibe-bridge` | lib | Glue layer — реализует Vibe-интерфейсы через Telegram API |
 | `:vibe-ui` | lib | UI-компоненты (Compose), Room DB, MQTT, Supabase |
 

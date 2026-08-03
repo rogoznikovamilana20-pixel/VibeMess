@@ -25,6 +25,15 @@ android {
     compileSdkVersion 35
     buildToolsVersion '35.0.0'
 
+    packaging {
+        resources {
+            excludes += 'META-INF/versions/9/OSGI-INF/MANIFEST.MF'
+            excludes += 'META-INF/*.SF'
+            excludes += 'META-INF/*.DSA'
+            excludes += 'META-INF/*.RSA'
+        }
+    }
+
     defaultConfig.applicationId = APP_PACKAGE
 
     sourceSets.main.jniLibs.srcDirs = ['../TMessagesProj/jni/']
@@ -103,8 +112,8 @@ android {
             jniDebuggable false
             signingConfig = signingConfigs.release
             minifyEnabled true
-            shrinkResources = false
-            multiDexEnabled = true
+            shrinkResources true
+            multiDexEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), '../TMessagesProj/proguard-rules.pro', '../vibe-ui/proguard-rules.pro'
             ndk.debugSymbolLevel = 'FULL'
         }

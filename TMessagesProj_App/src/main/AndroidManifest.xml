@@ -3,6 +3,18 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:installLocation="auto">
 
+    <!-- Remove unused permissions from Telegram core -->
+    <uses-permission android:name="com.android.vending.BILLING" tools:node="remove" />
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID" tools:node="remove" />
+    <uses-permission android:name="android.permission.ACCESS_ADSERVICES_ATTRIBUTION" tools:node="remove" />
+    <uses-permission android:name="android.permission.ACCESS_ADSERVICES_AD_ID" tools:node="remove" />
+    <uses-permission android:name="com.google.android.finsky.permission.BIND_GET_INSTALL_REFERRER_SERVICE" tools:node="remove" />
+    <uses-permission android:name="android.permission.READ_CLIPBOARD" tools:node="remove" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" tools:node="remove" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" tools:node="remove" />
+    <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" tools:node="remove" />
+    <uses-permission android:name="com.google.android.providers.gsf.permission.READ_GSERVICES" tools:node="remove" />
+
     <application 
         android:name="org.telegram.messenger.ApplicationLoaderImpl" 
         tools:replace="name,android:usesCleartextTraffic,android:allowBackup"
@@ -71,6 +83,22 @@
             android:name="com.vibe.ui.call.VibeCallService"
             android:exported="false"
             android:foregroundServiceType="microphone" />
+
+        <!-- Privacy Policy WebView -->
+        <activity
+            android:name="com.vibe.ui.compose.screens.PrivacyPolicyActivity"
+            android:theme="@style/Theme.Vibe"
+            android:exported="false"
+            android:label="Политика конфиденциальности"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- Terms of Service WebView -->
+        <activity
+            android:name="com.vibe.ui.compose.screens.TermsOfServiceActivity"
+            android:theme="@style/Theme.Vibe"
+            android:exported="false"
+            android:label="Пользовательское соглашение"
+            android:windowSoftInputMode="adjustResize" />
 
         <!-- Remove Telegram launcher activities & aliases - keep only Vibe SplashActivity -->
         <activity
