@@ -7,15 +7,21 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
@@ -33,6 +39,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.vibe.ui.i18n.VibeI18n
 import com.vibe.ui.network.ServerConfig
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -41,15 +48,29 @@ fun SettingsCallsScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     val serverConfig = remember { ServerConfig(context) }
 
-    val savedNoise = serverConfig.getAiProvider().let { false }
-    var noiseCancellation by remember { mutableStateOf(savedNoise) }
-    var videoCallQuality by remember { mutableStateOf(true) }
+    var noiseCancellation by remember { mutableStateOf(serverConfig.isNoiseCancellation()) }
+    var videoCallQuality by remember { mutableStateOf(serverConfig.isVideoHighQuality()) }
+    var signalingUrl by remember { mutableStateOf(serverConfig.getSignalingUrl()) }
+    var signalingAnonKey by remember { mutableStateOf(serverConfig.getSignalingAnonKey()) }
+    var turnServer by remember { mutableStateOf(serverConfig.getTurnServerUrl()) }
+    var turnUsername by remember { mutableStateOf(serverConfig.getTurnUsername()) }
+    var turnPassword by remember { mutableStateOf(serverConfig.getTurnPassword()) }
+    var saved by remember { mutableStateOf(false) }
+
+    fun saveServerSettings() {
+        serverConfig.setSignalingUrl(signalingUrl.trim())
+        serverConfig.setSignalingAnonKey(signalingAnonKey.trim())
+        serverConfig.setTurnServerUrl(turnServer.trim())
+        serverConfig.setTurnUsername(turnUsername.trim())
+        serverConfig.setTurnPassword(turnPassword.trim())
+        saved = true
+    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Звонки", fontWeight = FontWeight.Bold) },
+                title = { Text(VibeI18n.t("calls"), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
@@ -66,19 +87,26 @@ fun SettingsCallsScreen(onBack: () -> Unit) {
                 .fillMaxSize()
                 .padding(padding)
                 .padding(horizontal = 16.dp)
+                .verticalScroll(rememberScrollState())
         ) {
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                "Настройки звонков",
+                VibeI18n.t("call_settings"),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            CallsToggle("Шумоподавление", noiseCancellation, { noiseCancellation = it })
-            CallsToggle("Высокое качество видео", videoCallQuality, { videoCallQuality = it })
+            CallsToggle(VibeI18n.t("noise_suppression"), noiseCancellation, {
+                noiseCancellation = it
+                serverConfig.setNoiseCancellation(it)
+            })
+            CallsToggle(VibeI18n.t("high_quality_video"), videoCallQuality, {
+                videoCallQuality = it
+                serverConfig.setVideoHighQuality(it)
+            })
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -92,12 +120,127 @@ fun SettingsCallsScreen(onBack: () -> Unit) {
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        "Тип звонка по умолчанию",
+                        VibeI18n.t("signaling_server"),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        VibeI18n.t("fields_empty_hint"),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = signalingUrl,
+                        onValueChange = {
+                            signalingUrl = it
+                            saved = false
+                        },
+                        label = { Text(VibeI18n.t("url_project_hint")) },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = signalingAnonKey,
+                        onValueChange = {
+                            signalingAnonKey = it
+                            saved = false
+                        },
+                        label = { Text("Anon key") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        VibeI18n.t("turn_server"),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        VibeI18n.t("turn_hint"),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = turnServer,
+                        onValueChange = {
+                            turnServer = it
+                            saved = false
+                        },
+                        label = { Text("turn:host:3478") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = turnUsername,
+                        onValueChange = {
+                            turnUsername = it
+                            saved = false
+                        },
+                        label = { Text("Имя пользователя") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = turnPassword,
+                        onValueChange = {
+                            turnPassword = it
+                            saved = false
+                        },
+                        label = { Text("Пароль") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Button(
+                        onClick = { saveServerSettings() },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF8B5CF6)
+                        )
+                    ) {
+                        Text(if (saved) "Сохранено ✓" else "Сохранить")
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        VibeI18n.t("call_default_mode"),
                         style = MaterialTheme.typography.bodyLarge
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        "Аудиозвонок (можно переключить на видео во время вызова)",
+                        VibeI18n.t("audio_call"),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -107,7 +250,7 @@ fun SettingsCallsScreen(onBack: () -> Unit) {
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                "STUN/TURN серверы",
+                VibeI18n.t("stun_turn_servers"),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
@@ -161,7 +304,7 @@ private fun CallsToggle(label: String, checked: Boolean, onCheckedChange: (Boole
                 checked = checked,
                 onCheckedChange = onCheckedChange,
                 colors = SwitchDefaults.colors(
-                    checkedTrackColor = Color(0xFF8D2BFA)
+                    checkedTrackColor = Color(0xFF8B5CF6)
                 )
             )
         }

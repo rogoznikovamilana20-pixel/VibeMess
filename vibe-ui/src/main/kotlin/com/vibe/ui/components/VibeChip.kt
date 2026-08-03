@@ -85,10 +85,16 @@ class VibeChip @JvmOverloads constructor(
     override fun onTouchEvent(event: android.view.MotionEvent): Boolean {
         if (event.action == android.view.MotionEvent.ACTION_DOWN) {
             isSelected = !isSelected
-            onChipClick?.invoke()
             invalidate()
+            performClick()
             return true
         }
         return super.onTouchEvent(event)
+    }
+
+    override fun performClick(): Boolean {
+        super.performClick()
+        onChipClick?.invoke()
+        return true
     }
 }

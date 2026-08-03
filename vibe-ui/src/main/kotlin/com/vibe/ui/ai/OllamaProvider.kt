@@ -24,18 +24,30 @@ class OllamaProvider(
 
     override val name: String = "Ollama"
     override val isAvailable: Boolean
-        get() = try {
-            val url = URL("$baseUrl/api/tags")
-            val connection = url.openConnection() as HttpURLConnection
-            connection.connectTimeout = 3000
-            connection.readTimeout = 3000
-            connection.requestMethod = "GET"
-            val code = connection.responseCode
-            connection.disconnect()
-            code == 200
-        } catch (e: Exception) {
-            false
+        get() = _isAvailable
+
+    @Volatile
+    private var _isAvailable: Boolean = false
+
+    init {
+        Thread {
+            _isAvailable = try {
+                val url = URL("$baseUrl/api/tags")
+                val connection = url.openConnection() as HttpURLConnection
+                connection.connectTimeout = 3000
+                connection.readTimeout = 3000
+                connection.requestMethod = "GET"
+                val code = connection.responseCode
+                connection.disconnect()
+                code == 200
+            } catch (_: Exception) {
+                false
+            }
+        }.apply {
+            isDaemon = true
+            start()
         }
+    }
 
     override fun getDefaultModel(): String = "llama3.1"
 

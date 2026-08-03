@@ -16,6 +16,9 @@ interface TimelineDao {
     @Insert
     suspend fun insertPost(post: TimelinePostEntity)
 
+    @Query("UPDATE timeline_posts SET likes = likes + :delta, isLiked = :liked WHERE id = :postId")
+    suspend fun setLiked(postId: Long, liked: Boolean, delta: Int)
+
     @Delete
     suspend fun deletePost(post: TimelinePostEntity)
 

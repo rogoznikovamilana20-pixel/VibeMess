@@ -21,7 +21,7 @@ class MqttSignaling(
     private val onRemoteRing: () -> Unit
 ) {
     private val TAG = "MqttSignaling"
-    private val BROKER = "tcp://broker.emqx.io:1883"
+    private val BROKER = "ssl://broker.emqx.io:8883"
     private val CLIENT_ID = "vibe_${UUID.randomUUID().toString().take(8)}"
 
     private var client: MqttClient? = null

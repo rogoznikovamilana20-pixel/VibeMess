@@ -4,27 +4,31 @@
 
 For WebRTC calls to work behind NAT/firewalls, you need a TURN server.
 
+### Architecture
+
+The TURN secret never leaves the server:
+
+1. **coturn** runs with `use-auth-secret` (see `turnserver.conf`), secret = `static-auth-secret`
+2. **vibe-server** issues short-lived credentials: `GET /api/turn/credentials` (requires JWT auth) returns
+   `{ urls: [turn:your-server.com:3478], username: <unix-expiry>, credential: base64(HMAC-SHA1(TURN_SECRET, username)), ttl: 3600 }`
+3. **App** requests credentials right before each call; if the server is unreachable it falls back to the public openrelayproject TURN
+
 ### Quick start
 
 ```bash
-# 1. Edit turnserver.conf — set your server domain/IP and credentials
-# 2. Run:
+# 1. In vibe-server/.env set:
+#    TURN_SECRET=<long random string>
+#    TURN_SERVER_URL=turn:your-server.com:3478
+# 2. In turnserver.conf set the SAME value as static-auth-secret (plus external-ip/relay-ip on the VPS)
+# 3. Run:
 docker compose -f deploy/docker-compose.yml up -d
 ```
-
-### Configuration
-
-Edit `turnserver.conf`:
-
-- `realm=vibe.app` — change to your domain
-- `user=vibe:your-secret-password` — set a strong password
-- `cert=/etc/coturn/certs/cert.pem` — optional TLS certs
 
 ### Verify TURN is working
 
 Use Trickle ICE: https://webrtc.github.io/samples/src/content/peerconnection/trickle-ice/
 
-Add `turn:your-server.com:3478` with username `vibe` and your password.
+Add `turn:your-server.com:3478` with the username/password returned by `GET /api/turn/credentials` (open port 3478 UDP/TCP in the firewall).
 
 ## Supabase
 

@@ -17,26 +17,21 @@ import com.vibe.common.logging.VibeLogger
 /**
  * Implementation of [IUserService] that wraps Telegram's user logic.
  */
-internal class TelegramUserService : IUserService, NotificationCenter.NotificationCenterDelegate {
+internal class TelegramUserService(
+    private val currentAccount: Int = UserConfig.selectedAccount
+) : IUserService, NotificationCenter.NotificationCenterDelegate {
 
     private val _userUpdates = MutableSharedFlow<VibeUser>(
         extraBufferCapacity = 64,
         onBufferOverflow = BufferOverflow.DROP_OLDEST
     )
 
-    init {
-        // We register for updates in Application or a global scope, 
-        // but here we just prepare the Flow.
-    }
-
     override suspend fun getUser(userId: Long): VibeUser? = withContext(Dispatchers.Default) {
-        val account = UserConfig.selectedAccount
-        TelegramCoreAdapter.getUser(userId, account)
+        TelegramCoreAdapter.getUser(userId, currentAccount)
     }
 
     override suspend fun getUsers(userIds: List<Long>): List<VibeUser> = withContext(Dispatchers.Default) {
-        val account = UserConfig.selectedAccount
-        TelegramCoreAdapter.getUsers(userIds, account)
+        TelegramCoreAdapter.getUsers(userIds, currentAccount)
     }
 
     override fun observeUserUpdates(): Flow<VibeUser> = _userUpdates.asSharedFlow()

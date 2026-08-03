@@ -76,8 +76,13 @@ class VibeNetworkClient(
 
         scope = connectScope
         connectScope.launch {
-            _connectionState.value = ConnectionState.CONNECTING
-            doConnect()
+            try {
+                _connectionState.value = ConnectionState.CONNECTING
+                doConnect()
+            } catch (e: Exception) {
+                _connectionState.value = ConnectionState.DISCONNECTED
+                _isConnected.value = false
+            }
         }
     }
 
@@ -133,10 +138,14 @@ class VibeNetworkClient(
         reconnectAttempt++
 
         scope?.launch {
-            delay(delay)
-            if (!_isConnected.value) {
-                VibeLogger.d(tag, "Reconnecting (attempt $reconnectAttempt)")
-                doConnect()
+            try {
+                delay(delay)
+                if (!_isConnected.value) {
+                    VibeLogger.d(tag, "Reconnecting (attempt $reconnectAttempt)")
+                    doConnect()
+                }
+            } catch (e: Exception) {
+                VibeLogger.e(tag, "Reconnect failed", e)
             }
         }
     }

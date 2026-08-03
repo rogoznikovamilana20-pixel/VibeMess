@@ -3,11 +3,27 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:installLocation="auto">
 
+    <!-- Remove unused permissions from Telegram core -->
+    <uses-permission android:name="com.android.vending.BILLING" tools:node="remove" />
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID" tools:node="remove" />
+    <uses-permission android:name="android.permission.ACCESS_ADSERVICES_ATTRIBUTION" tools:node="remove" />
+    <uses-permission android:name="android.permission.ACCESS_ADSERVICES_AD_ID" tools:node="remove" />
+    <uses-permission android:name="com.google.android.finsky.permission.BIND_GET_INSTALL_REFERRER_SERVICE" tools:node="remove" />
+    <uses-permission android:name="android.permission.READ_CLIPBOARD" tools:node="remove" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" tools:node="remove" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" tools:node="remove" />
+    <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" tools:node="remove" />
+    <uses-permission android:name="com.google.android.providers.gsf.permission.READ_GSERVICES" tools:node="remove" />
+
     <application 
         android:name="org.telegram.messenger.ApplicationLoaderImpl" 
-        tools:replace="name,android:usesCleartextTraffic"
+        tools:replace="name,android:usesCleartextTraffic,android:allowBackup"
         android:networkSecurityConfig="@xml/network_security_config"
-        android:usesCleartextTraffic="false">
+        android:usesCleartextTraffic="false"
+        tools:targetApi="24"
+        android:allowBackup="false"
+        android:fullBackupContent="false"
+        android:dataExtractionRules="@xml/data_extraction_rules">
 
         <!-- Vibe Splash Screen - Main Launcher -->
         <activity
@@ -15,8 +31,7 @@
             android:theme="@style/Theme.Vibe"
             android:exported="true"
             android:label="Vibe"
-            android:windowSoftInputMode="adjustResize"
-            android:screenOrientation="portrait">
+            android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -29,6 +44,7 @@
             android:theme="@style/Theme.Vibe"
             android:exported="false"
             android:label="Vibe"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|density|uiMode"
             android:windowSoftInputMode="adjustResize" />
 
         <!-- Offline/Error State -->
@@ -40,104 +56,83 @@
             android:windowSoftInputMode="adjustResize" />
 
         <activity
-            android:name="com.vibe.ui.screens.WelcomeActivity"
-            android:theme="@style/Theme.Vibe"
-            android:exported="false"
-            android:label="Welcome"
-            android:windowSoftInputMode="adjustResize" />
-
-        <activity
-            android:name="com.vibe.ui.screens.AuthActivity"
-            android:theme="@style/Theme.Vibe"
-            android:exported="false"
-            android:label="Auth"
-            android:windowSoftInputMode="adjustResize" />
-
-        <activity
-            android:name="com.vibe.ui.screens.MainActivity"
-            android:theme="@style/Theme.Vibe"
-            android:exported="false"
-            android:label="Vibe"
-            android:windowSoftInputMode="adjustResize" />
-
-        <activity
-            android:name="com.vibe.ui.screens.SideMenuActivity"
-            android:theme="@style/Theme.Vibe"
-            android:exported="false"
-            android:label="Menu"
-            android:windowSoftInputMode="adjustResize" />
-
-        <activity
-            android:name="com.vibe.ui.screens.SearchActivity"
-            android:theme="@style/Theme.Vibe"
-            android:exported="false"
-            android:label="Search"
-            android:windowSoftInputMode="adjustResize" />
-
-        <activity
-            android:name="com.vibe.ui.screens.ContactsActivity"
-            android:theme="@style/Theme.Vibe"
-            android:exported="false"
-            android:label="Contacts"
-            android:windowSoftInputMode="adjustResize" />
-
-        <activity
-            android:name="com.vibe.ui.screens.CallsActivity"
-            android:theme="@style/Theme.Vibe"
-            android:exported="false"
-            android:label="Calls"
-            android:windowSoftInputMode="adjustResize" />
-
-        <activity
-            android:name="com.vibe.ui.screens.SettingsActivity"
-            android:theme="@style/Theme.Vibe"
-            android:exported="false"
-            android:label="Settings"
-            android:windowSoftInputMode="adjustResize" />
-
-        <activity
-            android:name="com.vibe.ui.screens.ServerSettingsActivity"
-            android:theme="@style/Theme.Vibe"
-            android:exported="false"
-            android:label="Server Settings"
-            android:windowSoftInputMode="adjustResize" />
-
-        <activity
-            android:name="com.vibe.ui.screens.BusinessActivity"
-            android:theme="@style/Theme.Vibe"
-            android:exported="false"
-            android:label="Business"
-            android:windowSoftInputMode="adjustResize" />
-
-        <activity
-            android:name="com.vibe.ui.screens.MarketplaceActivity"
-            android:theme="@style/Theme.Vibe"
-            android:exported="false"
-            android:label="Marketplace"
-            android:windowSoftInputMode="adjustResize" />
-
-        <activity
-            android:name="com.vibe.ui.screens.StylesActivity"
-            android:theme="@style/Theme.Vibe"
-            android:exported="false"
-            android:label="Styles"
-            android:windowSoftInputMode="adjustResize" />
-
-        <activity
             android:name="com.vibe.ui.security.VerificationActivity"
             android:theme="@style/Theme.Vibe"
             android:exported="false"
             android:label="Verification"
+            android:windowSoftInputMode="adjustResize"
+            tools:node="remove"
+            tools:ignore="MissingClass" />
+
+            <!-- Vibe Incoming Call Activity -->
+        <activity
+            android:name="com.vibe.ui.call.IncomingCallActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Vibe"
+            android:label="Incoming Call"
             android:windowSoftInputMode="adjustResize" />
 
-        <!-- Remove Telegram launcher activities - keep only Vibe SplashActivity -->
+            <!-- Vibe Download Foreground Service -->
+        <service
+            android:name="com.vibe.ui.service.VibeDownloadService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
+            <!-- Vibe Call Signaling Foreground Service -->
+        <service
+            android:name="com.vibe.ui.call.VibeCallService"
+            android:exported="false"
+            android:foregroundServiceType="microphone" />
+
+        <!-- Privacy Policy WebView -->
+        <activity
+            android:name="com.vibe.ui.compose.screens.PrivacyPolicyActivity"
+            android:theme="@style/Theme.Vibe"
+            android:exported="false"
+            android:label="Политика конфиденциальности"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- Terms of Service WebView -->
+        <activity
+            android:name="com.vibe.ui.compose.screens.TermsOfServiceActivity"
+            android:theme="@style/Theme.Vibe"
+            android:exported="false"
+            android:label="Пользовательское соглашение"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- Remove Telegram launcher activities & aliases - keep only Vibe SplashActivity -->
         <activity
             android:name="org.telegram.ui.LaunchActivity"
             android:exported="false"
-            tools:node="remove" />
+            tools:node="remove"
+            tools:ignore="Instantiatable" />
 
-        <activity
+        <activity-alias
             android:name="org.telegram.messenger.DefaultIcon"
+            android:exported="false"
+            tools:node="remove" />
+        <activity-alias
+            android:name="org.telegram.messenger.VintageIcon"
+            android:exported="false"
+            tools:node="remove" />
+        <activity-alias
+            android:name="org.telegram.messenger.AquaIcon"
+            android:exported="false"
+            tools:node="remove" />
+        <activity-alias
+            android:name="org.telegram.messenger.PremiumIcon"
+            android:exported="false"
+            tools:node="remove" />
+        <activity-alias
+            android:name="org.telegram.messenger.TurboIcon"
+            android:exported="false"
+            tools:node="remove" />
+        <activity-alias
+            android:name="org.telegram.messenger.NoxIcon"
+            android:exported="false"
+            tools:node="remove" />
+        <activity-alias
+            android:name="org.telegram.ui.CallsActivity"
             android:exported="false"
             tools:node="remove" />
 
@@ -146,10 +141,12 @@
             android:name="org.telegram.messenger.GoogleVoiceClientService"
             android:exported="true"
             android:foregroundServiceType="dataSync"
-        />
+            tools:ignore="ExportedService"
+            tools:node="remove" />
         <activity
             android:name="org.telegram.messenger.GoogleVoiceClientActivity"
-            android:exported="true">
+            android:exported="true"
+            tools:node="remove">
             <intent-filter>
                 <action android:name="com.google.android.voicesearch.SEND_MESSAGE_TO_CONTACTS" />
                 <category android:name="android.intent.category.DEFAULT" />

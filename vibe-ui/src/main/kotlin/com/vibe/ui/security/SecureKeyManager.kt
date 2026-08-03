@@ -55,28 +55,30 @@ class SecureKeyManager(private val context: Context) {
     /**
      * Get or create the encryption key from Android Keystore.
      */
-    @RequiresApi(Build.VERSION_CODES.M)
-    private fun getOrCreateKey(): SecretKey {
-        keyStore.getEntry(KEY_ALIAS, null)?.let { entry ->
-            return (entry as KeyStore.SecretKeyEntry).secretKey
+    private fun getOrCreateKey(): SecretKey? {
+        return try {
+            keyStore.getEntry(KEY_ALIAS, null)?.let { entry ->
+                (entry as? KeyStore.SecretKeyEntry)?.secretKey
+            } ?: run {
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return null
+                val keyGenerator = KeyGenerator.getInstance(
+                    KeyProperties.KEY_ALGORITHM_AES,
+                    KEYSTORE_PROVIDER
+                )
+                val spec = KeyGenParameterSpec.Builder(
+                    KEY_ALIAS,
+                    KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
+                )
+                    .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+                    .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+                    .setKeySize(256)
+                    .build()
+                keyGenerator.init(spec)
+                keyGenerator.generateKey()
+            }
+        } catch (_: Exception) {
+            null
         }
-
-        val keyGenerator = KeyGenerator.getInstance(
-            KeyProperties.KEY_ALGORITHM_AES,
-            KEYSTORE_PROVIDER
-        )
-
-        val spec = KeyGenParameterSpec.Builder(
-            KEY_ALIAS,
-            KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
-        )
-            .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
-            .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
-            .setKeySize(256)
-            .build()
-
-        keyGenerator.init(spec)
-        return keyGenerator.generateKey()
     }
 
     /**
@@ -111,7 +113,9 @@ class SecureKeyManager(private val context: Context) {
      * Encrypt a string using AES-GCM.
      */
     fun encrypt(plaintext: String): String {
-        val key = getOrCreateKey()
+        val key = getOrCreateKey() ?: throw UnsupportedOperationException(
+            "Encryption requires Android 6.0+ (API 23). KeyStore-backed keys unavailable on this device."
+        )
         val cipher = Cipher.getInstance("AES/GCM/NoPadding")
         cipher.init(Cipher.ENCRYPT_MODE, key)
 
@@ -133,7 +137,9 @@ class SecureKeyManager(private val context: Context) {
             throw SecurityException("Invalid ciphertext: too short (minimum $MIN_CIPHERTEXT_LENGTH bytes)")
         }
 
-        val key = getOrCreateKey()
+        val key = getOrCreateKey() ?: throw UnsupportedOperationException(
+            "Decryption requires Android 6.0+ (API 23). KeyStore-backed keys unavailable on this device."
+        )
         val iv = combined.sliceArray(0 until GCM_IV_LENGTH)
         val ciphertext = combined.sliceArray(GCM_IV_LENGTH until combined.size)
 

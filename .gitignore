@@ -26,8 +26,10 @@ local.properties
 *.keystore
 *.jks
 *.bks
+*.pem
 /build/
 TMessagesProj/.cxx/
+tools/sirin/.venv/
 TMessagesProj/build/
 **/wycheproof_testvectors/
 **/crypto_test_data.cc
@@ -36,6 +38,7 @@ TMessagesProj_AppHuawei/build/
 vibe-ui/build/
 vibe-common/build/
 vibe-bridge/build/
+vibe-engine-api/build/
 app/build/
 vibe-server/
 .artifacts/

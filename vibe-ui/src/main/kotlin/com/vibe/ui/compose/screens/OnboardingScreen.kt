@@ -36,6 +36,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -45,10 +46,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
 import com.vibe.ui.compose.components.VibeButton
 import com.vibe.ui.compose.components.VibeButtonSize
 import com.vibe.ui.compose.components.VibeButtonVariant
 import com.vibe.ui.compose.components.VibeInput
+import com.vibe.ui.data.ProfileRepository
+import com.vibe.ui.network.ServerConfig
 
 private val allInterests = listOf(
     "Технологии", "Бизнес", "Музыка", "Спорт",
@@ -61,7 +65,15 @@ private val allInterests = listOf(
 fun OnboardingScreen(
     onComplete: () -> Unit
 ) {
-    var step by remember { mutableStateOf(0) }
+    val context = LocalContext.current
+    val profileRepo = remember { ProfileRepository(context) }
+    val serverConfig = remember { ServerConfig(context) }
+    var step by remember { mutableIntStateOf(0) }
+    var selectedInterests by remember { mutableStateOf(setOf<String>()) }
+    var selectedMode by remember { mutableStateOf("personal") }
+    var name by remember { mutableStateOf("") }
+    var username by remember { mutableStateOf("") }
+    var bio by remember { mutableStateOf("") }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background
@@ -102,9 +114,22 @@ fun OnboardingScreen(
                 modifier = Modifier.weight(1f)
             ) { currentStep ->
                 when (currentStep) {
-                    0 -> InterestsStep()
-                    1 -> ModeSelectionStep()
-                    2 -> ProfileStep(onComplete = onComplete)
+                    0 -> InterestsStep(
+                        selectedInterests = selectedInterests,
+                        onInterestsChanged = { selectedInterests = it }
+                    )
+                    1 -> ModeSelectionStep(
+                        selectedMode = selectedMode,
+                        onModeChanged = { selectedMode = it }
+                    )
+                    2 -> ProfileStep(
+                        name = name,
+                        onNameChanged = { name = it },
+                        username = username,
+                        onUsernameChanged = { username = it },
+                        bio = bio,
+                        onBioChanged = { bio = it }
+                    )
                 }
             }
 
@@ -130,7 +155,13 @@ fun OnboardingScreen(
                     text = if (step == 2) "Готово" else "Далее",
                     onClick = {
                         if (step < 2) step++
-                        else onComplete()
+                        else {
+                            if (name.isNotBlank()) profileRepo.displayName = name
+                            if (username.isNotBlank()) profileRepo.username = username
+                            if (bio.isNotBlank()) profileRepo.bio = bio
+                            serverConfig.setAiModel(selectedMode)
+                            onComplete()
+                        }
                     },
                     size = VibeButtonSize.MEDIUM
                 )
@@ -141,9 +172,10 @@ fun OnboardingScreen(
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun InterestsStep() {
-    var selectedInterests by remember { mutableStateOf(setOf<String>()) }
-
+private fun InterestsStep(
+    selectedInterests: Set<String>,
+    onInterestsChanged: (Set<String>) -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -184,8 +216,10 @@ private fun InterestsStep() {
                             else MaterialTheme.colorScheme.surfaceVariant
                         )
                         .clickable {
-                            selectedInterests = if (isSelected) selectedInterests - interest
-                            else selectedInterests + interest
+                            onInterestsChanged(
+                                if (isSelected) selectedInterests - interest
+                                else selectedInterests + interest
+                            )
                         }
                         .padding(horizontal = 16.dp, vertical = 10.dp)
                 ) {
@@ -213,9 +247,10 @@ private fun InterestsStep() {
 }
 
 @Composable
-private fun ModeSelectionStep() {
-    var selectedMode by remember { mutableStateOf("personal") }
-
+private fun ModeSelectionStep(
+    selectedMode: String,
+    onModeChanged: (String) -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -248,7 +283,7 @@ private fun ModeSelectionStep() {
                         if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
                         else MaterialTheme.colorScheme.surfaceVariant
                     )
-                    .clickable { selectedMode = value }
+                    .clickable { onModeChanged(value) }
                     .padding(horizontal = 20.dp, vertical = 18.dp)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -284,11 +319,14 @@ private fun ModeSelectionStep() {
 }
 
 @Composable
-private fun ProfileStep(onComplete: () -> Unit) {
-    var name by remember { mutableStateOf("") }
-    var username by remember { mutableStateOf("") }
-    var bio by remember { mutableStateOf("") }
-
+private fun ProfileStep(
+    name: String,
+    onNameChanged: (String) -> Unit,
+    username: String,
+    onUsernameChanged: (String) -> Unit,
+    bio: String,
+    onBioChanged: (String) -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -327,7 +365,7 @@ private fun ProfileStep(onComplete: () -> Unit) {
 
         VibeInput(
             value = name,
-            onValueChange = { name = it },
+            onValueChange = onNameChanged,
             label = "Имя",
             placeholder = "Как к вам обращаться?",
             modifier = Modifier.fillMaxWidth()
@@ -337,7 +375,7 @@ private fun ProfileStep(onComplete: () -> Unit) {
 
         VibeInput(
             value = username,
-            onValueChange = { username = it },
+            onValueChange = onUsernameChanged,
             label = "Username",
             placeholder = "yourname",
             modifier = Modifier.fillMaxWidth()
@@ -347,7 +385,7 @@ private fun ProfileStep(onComplete: () -> Unit) {
 
         VibeInput(
             value = bio,
-            onValueChange = { bio = it },
+            onValueChange = onBioChanged,
             label = "О себе",
             placeholder = "Расскажите немного о себе",
             singleLine = false,

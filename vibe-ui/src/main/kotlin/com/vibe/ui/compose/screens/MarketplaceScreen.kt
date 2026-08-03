@@ -51,23 +51,29 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.compose.collectAsLazyPagingItems
+import com.vibe.ui.data.AchievementManager
+import com.vibe.ui.data.ProfileRepository
 import com.vibe.ui.data.db.VibeDatabase
 import com.vibe.ui.data.db.entity.MarketplaceListingEntity
+import com.vibe.ui.i18n.VibeI18n
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.NumberFormat
 import java.util.Locale
 
-private val categories = listOf("Все", "Услуги", "Товары", "Цифровое", "Обучение", "Другое")
+private val categories = listOf(VibeI18n.t("all"), "Услуги", "Товары", "Цифровое", "Обучение", "Другое")
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun MarketplaceScreen(onBack: () -> Unit) {
     val context = LocalContext.current
+    val profileRepo = remember { ProfileRepository(context) }
     val db = remember { VibeDatabase.getDatabase(context) }
-    val allListings by db.marketplaceDao().getActiveListings().collectAsState(initial = emptyList())
-    var selectedCategory by remember { mutableStateOf("Все") }
+    var selectedCategory by remember { mutableStateOf(VibeI18n.t("all")) }
     var showDialog by remember { mutableStateOf(false) }
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
@@ -81,14 +87,25 @@ fun MarketplaceScreen(onBack: () -> Unit) {
         category = "Услуги"
     }
 
-    val listings = if (selectedCategory == "Все") allListings
-    else allListings.filter { it.category == selectedCategory }
+    // Paging 3 data
+    val pagingFlow = remember(selectedCategory) {
+        Pager(
+            config = PagingConfig(pageSize = 20, enablePlaceholders = false)
+        ) {
+            if (selectedCategory == VibeI18n.t("all")) {
+                db.marketplaceDao().getActiveListingsPaging()
+            } else {
+                db.marketplaceDao().getListingsByCategoryPaging(selectedCategory)
+            }
+        }.flow
+    }
+    val listings = pagingFlow.collectAsLazyPagingItems()
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Marketplace", fontWeight = FontWeight.Bold) },
+                title = { Text(VibeI18n.t("marketplace"), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
@@ -101,7 +118,7 @@ fun MarketplaceScreen(onBack: () -> Unit) {
         },
         floatingActionButton = {
             FloatingActionButton(onClick = { showDialog = true }) {
-                Icon(Icons.Default.Add, "Новое объявление")
+                Icon(Icons.Default.Add, VibeI18n.t("new_listing"))
             }
         }
     ) { padding ->
@@ -123,7 +140,7 @@ fun MarketplaceScreen(onBack: () -> Unit) {
                 }
             }
 
-            if (listings.isEmpty()) {
+            if (listings.itemCount == 0) {
                 Column(
                     modifier = Modifier.fillMaxSize(),
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -133,21 +150,73 @@ fun MarketplaceScreen(onBack: () -> Unit) {
                         modifier = Modifier.size(48.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text("Нет объявлений",
+                    Text(VibeI18n.t("no_listings"),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text("Нажмите + чтобы создать",
+                    Text(VibeI18n.t("tap_plus_to_create"),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             } else {
+                var buyListing by remember { mutableStateOf<MarketplaceListingEntity?>(null) }
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp)
                 ) {
-                    items(listings, key = { it.id }) { listing ->
-                        ListingCard(listing)
+                    items(
+                        count = listings.itemCount,
+                        key = { listings[it]?.id ?: it.toLong() }
+                    ) { index ->
+                        listings[index]?.let { listing ->
+                            ListingCard(listing, onBuy = { buyListing = listing })
+                        }
                     }
+                }
+                buyListing?.let { listing ->
+                    val priceSparks = listing.price.toLong().coerceAtLeast(1)
+                    val commission = com.vibe.ui.data.payment.SparkManager.commissionFor(priceSparks)
+                    AlertDialog(
+                        onDismissRequest = { buyListing = null },
+                        title = { Text("Покупка") },
+                        text = {
+                            Column {
+                                Text("${listing.title} — $priceSparks ⚡")
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text("Комиссия платформы: $commission ⚡ (5%)",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text("Продавцу зачислится ${priceSparks - commission} ⚡",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        },
+                        confirmButton = {
+                            TextButton(onClick = {
+                                scope.launch {
+                                    val ok = com.vibe.ui.data.payment.SparkManager.spendSparks(priceSparks)
+                                    if (ok) {
+                                        db.marketplaceDao().deactivate(listing.id)
+                                        android.widget.Toast.makeText(
+                                            context,
+                                            "Куплено за $priceSparks ⚡",
+                                            android.widget.Toast.LENGTH_SHORT
+                                        ).show()
+                                    } else {
+                                        android.widget.Toast.makeText(
+                                            context,
+                                            VibeI18n.t("not_enough_sparks"),
+                                            android.widget.Toast.LENGTH_LONG
+                                        ).show()
+                                    }
+                                }
+                                buyListing = null
+                            }) { Text(VibeI18n.t("buy")) }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { buyListing = null }) { Text(VibeI18n.t("cancel")) }
+                        }
+                    )
                 }
             }
         }
@@ -156,13 +225,13 @@ fun MarketplaceScreen(onBack: () -> Unit) {
     if (showDialog) {
         AlertDialog(
             onDismissRequest = { showDialog = false; resetForm() },
-            title = { Text("Новое объявление") },
+            title = { Text(VibeI18n.t("new_listing")) },
             text = {
                 Column {
                     OutlinedTextField(
                         value = title,
                         onValueChange = { title = it },
-                        label = { Text("Название") },
+                        label = { Text(VibeI18n.t("title")) },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         shape = RoundedCornerShape(12.dp)
@@ -171,7 +240,7 @@ fun MarketplaceScreen(onBack: () -> Unit) {
                     OutlinedTextField(
                         value = description,
                         onValueChange = { description = it },
-                        label = { Text("Описание") },
+                        label = { Text(VibeI18n.t("description")) },
                         modifier = Modifier.fillMaxWidth(),
                         minLines = 3,
                         shape = RoundedCornerShape(12.dp)
@@ -180,18 +249,21 @@ fun MarketplaceScreen(onBack: () -> Unit) {
                     OutlinedTextField(
                         value = price,
                         onValueChange = { price = it },
-                        label = { Text("Цена") },
+                        label = { Text(VibeI18n.t("price")) },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         shape = RoundedCornerShape(12.dp)
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        categories.filter { it != "Все" }.forEach { cat ->
+                    Text(VibeI18n.t("category"), style = MaterialTheme.typography.bodyMedium)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        categories.filter { it != VibeI18n.t("all") }.forEach { cat ->
                             FilterChip(
                                 selected = category == cat,
                                 onClick = { category = cat },
-                                label = { Text(cat) }
+                                label = { Text(cat) },
+                                modifier = Modifier.fillMaxWidth()
                             )
                         }
                     }
@@ -209,18 +281,19 @@ fun MarketplaceScreen(onBack: () -> Unit) {
                                     price = priceVal,
                                     category = category,
                                     createdAt = System.currentTimeMillis(),
-                                    sellerName = "Андрей"
+                                    sellerName = profileRepo.displayName
                                 ))
+                                AchievementManager(context).unlock(AchievementManager.Id.FIRST_LISTING)
                             }
                         }
                     }
                     showDialog = false
                     resetForm()
-                }) { Text("Создать") }
+                }) { Text(VibeI18n.t("create")) }
             },
             dismissButton = {
                 TextButton(onClick = { showDialog = false; resetForm() }) {
-                    Text("Отмена")
+                    Text(VibeI18n.t("cancel"))
                 }
             }
         )
@@ -228,7 +301,10 @@ fun MarketplaceScreen(onBack: () -> Unit) {
 }
 
 @Composable
-private fun ListingCard(listing: MarketplaceListingEntity) {
+private fun ListingCard(
+    listing: MarketplaceListingEntity,
+    onBuy: () -> Unit = {}
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -273,6 +349,13 @@ private fun ListingCard(listing: MarketplaceListingEntity) {
             Text("Продавец: ${listing.sellerName}",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(modifier = Modifier.height(8.dp))
+            TextButton(
+                onClick = onBuy,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Купить за ⚡", fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+            }
         }
     }
 }

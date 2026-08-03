@@ -3,7 +3,7 @@ buildscript {
     repositories {
         mavenCentral()
         google()
-        maven { url 'https://developer.huawei.com/repo/' }
+        maven { url = 'https://developer.huawei.com/repo/' }
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:8.6.1'

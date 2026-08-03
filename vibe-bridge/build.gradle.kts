@@ -36,6 +36,7 @@ configurations.all {
 dependencies {
     implementation(kotlin("stdlib"))
     implementation(project(":vibe-common"))
+    api(project(":vibe-engine-api"))
     api(project(":TMessagesProj"))
     implementation("androidx.core:core:1.13.1")
     implementation("androidx.collection:collection-ktx:1.4.0")

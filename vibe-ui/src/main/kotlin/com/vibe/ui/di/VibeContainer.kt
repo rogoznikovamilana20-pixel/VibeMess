@@ -3,6 +3,7 @@ package com.vibe.ui.di
 import com.vibe.common.logging.VibeLogger
 import com.vibe.bridge.api.ITelegramGateway
 import com.vibe.bridge.internal.BridgeManager
+import com.vibe.ui.data.payment.SparkManager
 
 /**
  * Simple DI container for Vibe UI dependencies.
@@ -12,6 +13,7 @@ object VibeContainer {
     private var bridgeManager: BridgeManager? = null
     private var gateway: ITelegramGateway? = null
     private var initializationError: Throwable? = null
+    private var appContext: android.content.Context? = null
 
     /**
      * Test-only: inject a mock BridgeManager for unit testing.
@@ -22,8 +24,14 @@ object VibeContainer {
         initializationError = null
     }
 
+    @Synchronized
     fun initialize(onError: ((Throwable) -> Unit)? = null): Boolean {
         if (bridgeManager != null) return true
+
+        val ctx = appContext ?: com.vibe.ui.VibeAppContext.getOrNull()
+        if (ctx != null) {
+            SparkManager.initialize(ctx)
+        }
         
         val mgr = BridgeManager()
         
@@ -67,10 +75,15 @@ object VibeContainer {
         return bridgeManager != null && gateway != null
     }
 
+    fun bindContext(context: android.content.Context) {
+        appContext = context.applicationContext
+    }
+
     fun getInitializationError(): Throwable? {
         return initializationError
     }
 
+    @Synchronized
     fun destroy() {
         try {
             bridgeManager?.destroy()

@@ -1,6 +1,10 @@
 package com.vibe.ui.compose.screens
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -15,6 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -40,6 +45,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.vibe.ui.compose.components.VibeAvatar
+import com.vibe.ui.data.AchievementManager
 import com.vibe.ui.data.ProfileRepository
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -50,6 +57,23 @@ fun SettingsEditProfileScreen(onBack: () -> Unit) {
     var name by remember { mutableStateOf(repo.displayName) }
     var bio by remember { mutableStateOf(repo.bio) }
     var username by remember { mutableStateOf(repo.username) }
+    var avatarPath by remember { mutableStateOf(repo.avatarPath) }
+
+    val photoPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        if (uri != null) {
+            try {
+                val dest = java.io.File(context.filesDir, "avatar.jpg")
+                context.contentResolver.openInputStream(uri)?.use { input ->
+                    dest.outputStream().use { output -> input.copyTo(output) }
+                }
+                avatarPath = dest.absolutePath
+            } catch (e: Exception) {
+                com.vibe.common.logging.VibeLogger.e("EditProfile", "Avatar copy failed", e)
+            }
+        }
+    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -78,33 +102,52 @@ fun SettingsEditProfileScreen(onBack: () -> Unit) {
             Spacer(modifier = Modifier.height(24.dp))
 
             Box(
-                modifier = Modifier
-                    .size(96.dp)
-                    .clip(CircleShape)
-                    .background(
-                        Brush.linearGradient(
-                            colors = listOf(Color(0xFF8D2BFA), Color(0xFFB06BFF))
-                        )
-                    ),
+                modifier = Modifier.size(96.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Box(
                     modifier = Modifier
-                        .size(88.dp)
+                        .size(96.dp)
                         .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primaryContainer),
+                        .clickable {
+                            photoPicker.launch(
+                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                            )
+                        }
+                ) {
+                    VibeAvatar(
+                        name = name.ifBlank { "?" },
+                        size = 96.dp,
+                        photoUrl = avatarPath.takeIf { it.isNotBlank() }
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(4.dp)
+                        .size(28.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFF8D2BFA)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = name.first().uppercase(),
-                        style = MaterialTheme.typography.displaySmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    Icon(
+                        Icons.Default.PhotoCamera,
+                        "Сменить фото",
+                        tint = Color.White,
+                        modifier = Modifier.size(16.dp)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                "Нажмите на фото, чтобы изменить",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             OutlinedTextField(
                 value = name,
@@ -145,13 +188,15 @@ fun SettingsEditProfileScreen(onBack: () -> Unit) {
                     repo.displayName = name
                     repo.bio = bio
                     repo.username = username
+                    repo.avatarPath = avatarPath
+                    AchievementManager(context).unlock(AchievementManager.Id.PROFILE_SET)
                     onBack()
                 },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF8D2BFA)
-                )
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF8B5CF6)
+                        )
             ) {
                 Text("Сохранить", modifier = Modifier.padding(vertical = 4.dp))
             }

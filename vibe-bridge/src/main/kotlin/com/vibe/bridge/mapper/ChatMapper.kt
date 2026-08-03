@@ -2,9 +2,14 @@ package com.vibe.bridge.mapper
 
 import com.vibe.bridge.internal.telegram.TelegramCoreAdapter
 import com.vibe.bridge.model.VibeChat
+import org.telegram.messenger.AndroidUtilities
 import org.telegram.messenger.ChatObject
+import org.telegram.messenger.FileLoader
+import org.telegram.messenger.ImageReceiver
 import org.telegram.messenger.MessagesController
+import org.telegram.tgnet.TLObject
 import org.telegram.tgnet.TLRPC
+import java.io.File
 
 /**
  * Mapper for Chat related conversions.
@@ -26,11 +31,11 @@ internal class ChatMapper(
         val title = if (user != null) {
             val fn = user.first_name ?: ""
             val ln = user.last_name ?: ""
-            "$fn $ln".trim()
+            "$fn $ln".trim().ifEmpty { user.phone ?: "Без имени" }
         } else if (chat != null) {
-            chat.title ?: "Unknown"
+            chat.title ?: "Без имени"
         } else {
-            "Unknown"
+            "Без имени"
         }
 
         val type = when {
@@ -47,6 +52,12 @@ internal class ChatMapper(
             } else null
         } else null
 
+        val avatarPath = when {
+            user != null -> resolveAvatar(user, currentAccount)
+            chat != null -> resolveAvatar(chat, currentAccount)
+            else -> null
+        }
+
         return VibeChat(
             id = chatId,
             title = title,
@@ -57,7 +68,26 @@ internal class ChatMapper(
             isPinned = dialog.pinned,
             isArchived = dialog.folder_id != 0,
             draftText = TelegramCoreAdapter.getDraftText(chatId, currentAccount),
-            lastActivityDate = TelegramCoreAdapter.getDialogLastMessageDate(dialog)
+            lastActivityDate = TelegramCoreAdapter.getDialogLastMessageDate(dialog),
+            avatarPath = avatarPath
         )
+    }
+
+    private fun resolveAvatar(tlObject: TLObject, currentAccount: Int): String? {
+        val small: TLRPC.FileLocation? = when (tlObject) {
+            is TLRPC.User -> tlObject.photo?.photo_small
+            is TLRPC.Chat -> tlObject.photo?.photo_small
+            else -> null
+        }
+        if (small == null) return null
+        val file = FileLoader.getInstance(currentAccount).getPathToAttach(small, true) ?: return null
+        if (file.exists()) return file.absolutePath
+        // Avatar not cached yet — ask Telegram core to download it; the UI
+        // falls back to initials until the file appears on the next sync emit.
+        AndroidUtilities.runOnUIThread {
+            val receiver = ImageReceiver()
+            receiver.setForUserOrChat(tlObject, null, tlObject)
+        }
+        return null
     }
 }

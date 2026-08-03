@@ -1,5 +1,6 @@
 package com.vibe.ui.call
 
+import android.Manifest
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -7,10 +8,13 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import com.vibe.common.logging.VibeLogger
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 
 class VibeCallService : Service() {
 
@@ -20,13 +24,38 @@ class VibeCallService : Service() {
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
-        startForeground(NOTIFICATION_ID, buildNotification("Vibe работает в фоне"))
+        val hasMicPermission = ContextCompat.checkSelfPermission(
+            this, Manifest.permission.RECORD_AUDIO
+        ) == PackageManager.PERMISSION_GRANTED
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val type = if (hasMicPermission) {
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+            } else {
+                VibeLogger.w(TAG, "RECORD_AUDIO not granted, starting FGS without mic type")
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_NONE
+            }
+            startForeground(NOTIFICATION_ID, buildNotification("Ожидание звонков"), type)
+        } else {
+            startForeground(NOTIFICATION_ID, buildNotification("Ожидание звонков"))
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            stopForeground(STOP_FOREGROUND_REMOVE)
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_START -> {
-                val userId = intent.getStringExtra(EXTRA_USER_ID) ?: return START_STICKY
+                val userId = intent.getStringExtra(EXTRA_USER_ID)
+                if (userId == null) {
+                    // Process was restarted with a null intent (START_STICKY) —
+                    // restore the last known user from prefs instead of idling.
+                    val restored = CallUtils.getUserIdFromPrefs(this)
+                    if (restored.isNotBlank()) {
+                        connectSignaling(restored)
+                    }
+                    return START_STICKY
+                }
                 connectSignaling(userId)
             }
             ACTION_STOP -> {
@@ -35,6 +64,13 @@ class VibeCallService : Service() {
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 stopSelf()
             }
+            else -> {
+                // Null intent after process restart.
+                val restored = CallUtils.getUserIdFromPrefs(this)
+                if (restored.isNotBlank()) {
+                    connectSignaling(restored)
+                }
+            }
         }
         return START_STICKY
     }
@@ -42,19 +78,29 @@ class VibeCallService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     private fun connectSignaling(userId: String) {
-        signaling = SupabaseSignaling(
-            projectUrl = SupabaseSignaling.SUPABASE_URL,
-            anonKey = SupabaseSignaling.SUPABASE_ANON_KEY,
-            userId = userId,
-            onIncomingCall = { callerId, roomId ->
-                VibeLogger.d(TAG, "Incoming call from $callerId")
-                showIncomingCallNotification(callerId, roomId)
-            },
-            onRemoteSdp = {},
-            onRemoteIce = {},
-            onCallAccepted = {}
-        )
-        signaling?.connect()
+        disconnectSignaling()
+        signaling = try {
+            SupabaseSignaling(
+                projectUrl = SupabaseSignaling.SUPABASE_URL,
+                anonKey = SupabaseSignaling.SUPABASE_ANON_KEY,
+                userId = userId,
+                onIncomingCall = { callerId, roomId ->
+                    VibeLogger.d(TAG, "Incoming call from $callerId")
+                    showIncomingCallNotification(callerId, roomId)
+                },
+                onRemoteSdp = {},
+                onRemoteIce = {},
+                onCallAccepted = {}
+            )
+        } catch (e: Exception) {
+            VibeLogger.e(TAG, "signaling init failed", e)
+            null
+        }
+        try {
+            signaling?.connect()
+        } catch (e: Exception) {
+            VibeLogger.e(TAG, "signaling connect failed", e)
+        }
     }
 
     private fun disconnectSignaling() {
@@ -153,6 +199,13 @@ class VibeCallService : Service() {
         const val EXTRA_USER_ID = "user_id"
 
         fun start(context: Context, userId: String) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
+                ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO)
+                != PackageManager.PERMISSION_GRANTED
+            ) {
+                VibeLogger.w("VibeCallService", "RECORD_AUDIO not granted — cannot start call service")
+                return
+            }
             val intent = Intent(context, VibeCallService::class.java).apply {
                 action = ACTION_START
                 putExtra(EXTRA_USER_ID, userId)

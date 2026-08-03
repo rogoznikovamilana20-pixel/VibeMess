@@ -235,7 +235,13 @@ class SupabaseSignaling(
     }
 
     companion object {
-        val SUPABASE_URL: String get() = com.vibe.ui.BuildConfig.SUPABASE_URL
-        val SUPABASE_ANON_KEY: String get() = com.vibe.ui.BuildConfig.SUPABASE_ANON_KEY
+        val SUPABASE_URL: String
+            get() = com.vibe.ui.network.ServerConfig(
+                org.telegram.messenger.ApplicationLoader.applicationContext
+            ).getSignalingUrl()
+        val SUPABASE_ANON_KEY: String
+            get() = com.vibe.ui.network.ServerConfig(
+                org.telegram.messenger.ApplicationLoader.applicationContext
+            ).getSignalingAnonKey()
     }
 }

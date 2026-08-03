@@ -1,12 +1,16 @@
 package com.vibe.ui.data.db.entity
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
 /**
  * Room entity for messages.
  */
-@Entity(tableName = "messages")
+@Entity(
+    tableName = "messages",
+    indices = [Index(value = ["chatId", "timestamp"])]
+)
 data class MessageEntity(
     @PrimaryKey
     val id: Long,

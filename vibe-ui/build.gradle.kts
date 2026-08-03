@@ -23,11 +23,21 @@ android {
         f.readLines().firstOrNull { it.startsWith("SUPABASE_ANON_KEY=") }?.substringAfter("=")?.trim()?.trim('"')
     } ?: ""
 
+    val rustServerUrl = rootProject.file("local.properties").takeIf { it.exists() }?.let { f ->
+        f.readLines().firstOrNull { it.startsWith("RUST_SERVER_URL=") }?.substringAfter("=")?.trim()?.trim('"')
+    } ?: ""
+
+    val rustWsUrl = rootProject.file("local.properties").takeIf { it.exists() }?.let { f ->
+        f.readLines().firstOrNull { it.startsWith("RUST_WS_URL=") }?.substringAfter("=")?.trim()?.trim('"')
+    } ?: ""
+
     defaultConfig {
         minSdk = 21
         buildConfigField("String", "AI_API_KEY", "\"$aiApiKey\"")
         buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
         buildConfigField("String", "SUPABASE_ANON_KEY", "\"$supabaseAnonKey\"")
+        buildConfigField("String", "RUST_SERVER_URL", "\"$rustServerUrl\"")
+        buildConfigField("String", "RUST_WS_URL", "\"$rustWsUrl\"")
     }
 
     compileOptions {
@@ -52,13 +62,21 @@ android {
     testOptions {
         unitTests.isReturnDefaultValues = true
     }
+
+    lint {
+        baseline = file("lint-baseline.xml")
+        disable += "UseTomlInstead"
+    }
+
+    defaultConfig {
+        consumerProguardFiles("proguard-rules.pro")
+    }
 }
 
 repositories {
     google()
     mavenCentral()
 }
-
 configurations.all {
     resolutionStrategy {
         force("org.jetbrains.kotlin:kotlin-stdlib:1.9.20")
@@ -69,13 +87,13 @@ configurations.all {
 dependencies {
     implementation(kotlin("stdlib"))
     implementation(project(":vibe-common"))
+    implementation(project(":vibe-engine-api"))
     implementation(project(":vibe-bridge"))
     
     // AndroidX
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("androidx.recyclerview:recyclerview:1.3.2")
-    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
     implementation("androidx.cardview:cardview:1.0.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
@@ -96,6 +114,9 @@ dependencies {
     implementation("androidx.compose.runtime:runtime")
     implementation("androidx.compose.animation:animation")
     
+    // Navigation Compose
+    implementation("androidx.navigation:navigation-compose:2.7.7")
+    
     // Accompanist
     implementation("com.google.accompanist:accompanist-systemuicontroller:0.34.0")
     
@@ -109,10 +130,12 @@ dependencies {
     val roomVersion = "2.6.1"
     implementation("androidx.room:room-runtime:$roomVersion")
     implementation("androidx.room:room-ktx:$roomVersion")
+    implementation("androidx.room:room-paging:$roomVersion")
     ksp("androidx.room:room-compiler:$roomVersion")
     
     // Paging 3
     implementation("androidx.paging:paging-runtime-ktx:3.2.1")
+    implementation("androidx.paging:paging-compose:3.2.1")
 
     // MQTT signaling for WebRTC
     implementation("org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.5")
@@ -120,6 +143,18 @@ dependencies {
     // Supabase Realtime (WebSocket)
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     
+    // Coil image loading for avatars
+    implementation("io.coil-kt:coil-compose:2.7.0")
+    implementation("io.coil-kt:coil-video:2.7.0")
+
+    // ExoPlayer for video playback in Timeline
+    implementation("androidx.media3:media3-exoplayer:1.5.1")
+    implementation("androidx.media3:media3-ui:1.5.1")
+
+    // E2EE encryption — Bouncy Castle (X25519 + AES-GCM)
+    implementation("org.bouncycastle:bcprov-jdk18on:1.79")
+    implementation("org.bouncycastle:bcpkix-jdk18on:1.79")
+
     // Firebase Crashlytics
     implementation("com.google.firebase:firebase-crashlytics:18.6.4")
     implementation("com.google.firebase:firebase-analytics:21.5.1")

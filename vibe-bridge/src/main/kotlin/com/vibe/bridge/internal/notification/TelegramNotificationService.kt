@@ -110,6 +110,14 @@ internal class TelegramNotificationService(
     }
 
     override fun didReceivedNotification(id: Int, account: Int, vararg args: Any?) {
+        try {
+            handleNotification(id, account, args)
+        } catch (e: Throwable) {
+            VibeLogger.e("TelegramNotificationService", "didReceivedNotification failed (id=$id)", e)
+        }
+    }
+
+    private fun handleNotification(id: Int, account: Int, args: Array<out Any?>) {
         when (id) {
             NotificationCenter.didReceiveNewMessages -> {
                 if (args.size < 2) {

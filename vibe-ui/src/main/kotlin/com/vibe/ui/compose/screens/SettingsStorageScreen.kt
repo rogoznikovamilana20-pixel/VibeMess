@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -43,6 +44,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.vibe.ui.data.db.VibeDatabase
+import com.vibe.ui.i18n.VibeI18n
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -96,7 +98,7 @@ fun SettingsStorageScreen(onBack: () -> Unit) {
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Хранилище", fontWeight = FontWeight.Bold) },
+                title = { Text(VibeI18n.t("storage"), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
@@ -118,7 +120,7 @@ fun SettingsStorageScreen(onBack: () -> Unit) {
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                "Использование памяти",
+                VibeI18n.t("memory_usage"),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
@@ -134,20 +136,20 @@ fun SettingsStorageScreen(onBack: () -> Unit) {
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    StorageRow(Icons.Default.Storage, "База данных", formatSize(dbSize))
+                    StorageRow(Icons.Default.Storage, VibeI18n.t("database"), formatSize(dbSize))
                     Spacer(modifier = Modifier.height(8.dp))
-                    StorageRow(Icons.Default.Image, "Медиафайлы", formatSize(mediaSize))
+                    StorageRow(Icons.Default.Image, VibeI18n.t("media_files"), formatSize(mediaSize))
                     Spacer(modifier = Modifier.height(12.dp))
                     val totalMb = if (totalSize > 0) (totalSize.toFloat() / (50 * 1024 * 1024)).coerceAtMost(1f) else 0f
                     LinearProgressIndicator(
                         progress = { totalMb },
                         modifier = Modifier.fillMaxWidth(),
-                        color = Color(0xFF8D2BFA),
+                        color = Color(0xFF8B5CF6),
                         trackColor = MaterialTheme.colorScheme.surface
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        "${(totalMb * 100).toInt()}% использовано",
+                        "${(totalMb * 100).toInt()}${VibeI18n.t("percent_used")}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -157,7 +159,7 @@ fun SettingsStorageScreen(onBack: () -> Unit) {
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                "Кэш",
+                VibeI18n.t("cache"),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
@@ -198,7 +200,18 @@ fun SettingsStorageScreen(onBack: () -> Unit) {
                                 scope.launch {
                                     withContext(Dispatchers.IO) {
                                         context.cacheDir?.let { dir ->
-                                            dir.walkTopDown().forEach { if (it.isFile) it.delete() }
+                                            dir.listFiles()?.forEach { file ->
+                                                try {
+                                                    if (file.isDirectory) {
+                                                        file.listFiles()?.forEach { child ->
+                                                            try { child.delete() } catch (_: Exception) {}
+                                                        }
+                                                        try { file.delete() } catch (_: Exception) {}
+                                                    } else {
+                                                        try { file.delete() } catch (_: Exception) {}
+                                                    }
+                                                } catch (_: Exception) {}
+                                            }
                                         }
                                     }
                                     cacheCleared = true
@@ -211,8 +224,8 @@ fun SettingsStorageScreen(onBack: () -> Unit) {
                             )
                         ) {
                             Icon(Icons.Default.Delete, null, tint = Color(0xFFEF4444))
-                            Spacer(modifier = Modifier.padding(4.dp))
-                            Text("Очистить кэш", color = Color(0xFFEF4444))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(VibeI18n.t("clear_cache"), color = Color(0xFFEF4444))
                         }
                     }
                 }
@@ -221,7 +234,7 @@ fun SettingsStorageScreen(onBack: () -> Unit) {
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                "Данные",
+                VibeI18n.t("data"),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
@@ -257,7 +270,7 @@ fun SettingsStorageScreen(onBack: () -> Unit) {
 private fun StorageRow(icon: ImageVector, label: String, size: String) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Icon(icon, null, tint = Color(0xFF8D2BFA))
-        Spacer(modifier = Modifier.padding(8.dp))
+        Spacer(modifier = Modifier.width(8.dp))
         Text(label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
         Text(size, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }

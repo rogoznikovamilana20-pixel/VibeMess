@@ -246,13 +246,6 @@ class SplashActivity : AppCompatActivity() {
         return NextScreen.OFFLINE_MAIN
     }
 
-    private fun isNetworkAvailable(): Boolean {
-        val connectivityManager = getSystemService(CONNECTIVITY_SERVICE) as? android.net.ConnectivityManager
-        val network = connectivityManager?.activeNetwork ?: return false
-        val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
-        return capabilities.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET)
-    }
-
     private fun transitionToScreen(screen: NextScreen) {
         // Fade out current view
         val contentView = findViewById<View>(android.R.id.content)
@@ -271,8 +264,6 @@ class SplashActivity : AppCompatActivity() {
 
                 // Navigate to appropriate screen
                 val intent = when (screen) {
-                    NextScreen.WELCOME -> Intent(this, WelcomeActivity::class.java)
-                    NextScreen.LOGIN -> Intent(this, AuthActivity::class.java)
                     NextScreen.MAIN -> Intent(this, VibeActivity::class.java)
                     NextScreen.OFFLINE_MAIN -> Intent(this, VibeActivity::class.java).apply {
                         putExtra("offline_mode", true)
@@ -295,8 +286,6 @@ class SplashActivity : AppCompatActivity() {
     }
 
     enum class NextScreen {
-        WELCOME,
-        LOGIN,
         MAIN,
         OFFLINE_MAIN,
         OFFLINE_ERROR

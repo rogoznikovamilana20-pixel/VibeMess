@@ -18,7 +18,7 @@ internal class TelegramMapper {
      * Note: IDE may show "Unresolved reference TLRPC". This is a false positive 
      * due to TLRPC.java size. Gradle compiler handles this correctly.
      */
-    fun mapUser(user: TLRPC.User): VibeUser = userMapper.mapUser(user)!!
+    fun mapUser(user: TLRPC.User): VibeUser = userMapper.mapUser(user) ?: VibeUser(id = 0, username = null, firstName = "Unknown", lastName = null, phone = null, isBot = false, isPremium = false, avatar = null)
     fun mapAccount(index: Int, config: UserConfig): VibeAccount = accountMapper.mapAccount(index, config)
     fun mapMessage(mo: MessageObject): VibeMessage = messageMapper.mapMessage(mo)
     fun mapMessagePreview(mo: MessageObject): VibeMessagePreview = messageMapper.mapMessagePreview(mo)

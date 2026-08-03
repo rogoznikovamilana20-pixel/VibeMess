@@ -28,11 +28,16 @@ class ProfileRepository(context: Context) {
         get() = prefs.getString(KEY_AVATAR, "А") ?: "А"
         set(value) = prefs.edit().putString(KEY_AVATAR, value).apply()
 
+    var avatarPath: String
+        get() = prefs.getString(KEY_AVATAR_PATH, "") ?: ""
+        set(value) = prefs.edit().putString(KEY_AVATAR_PATH, value).apply()
+
     companion object {
         private const val KEY_NAME = "display_name"
         private const val KEY_BIO = "bio"
         private const val KEY_USERNAME = "username"
         private const val KEY_VIBE_ID = "vibe_id"
         private const val KEY_AVATAR = "avatar_initial"
+        private const val KEY_AVATAR_PATH = "avatar_path"
     }
 }

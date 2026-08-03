@@ -22,6 +22,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -36,6 +38,7 @@ data class BubbleReaction(
     val isSelected: Boolean = false
 )
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun VibeChatBubble(
     text: String,
@@ -45,7 +48,8 @@ fun VibeChatBubble(
     status: MessageStatus = MessageStatus.SENT,
     reactions: List<BubbleReaction> = emptyList(),
     replyPreview: String? = null,
-    mediaPreview: @Composable (() -> Unit)? = null
+    mediaPreview: @Composable (() -> Unit)? = null,
+    onLongClick: (() -> Unit)? = null
 ) {
     val bubbleColor by animateColorAsState(
         targetValue = if (isOutgoing) MaterialTheme.colorScheme.primary
@@ -60,7 +64,12 @@ fun VibeChatBubble(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 2.dp),
+            .padding(horizontal = 8.dp, vertical = 2.dp)
+            .then(
+                if (onLongClick != null) {
+                    Modifier.combinedClickable(onLongClick = onLongClick, onClick = {})
+                } else Modifier
+            ),
         horizontalArrangement = if (isOutgoing) Arrangement.End else Arrangement.Start
     ) {
         if (!isOutgoing) {

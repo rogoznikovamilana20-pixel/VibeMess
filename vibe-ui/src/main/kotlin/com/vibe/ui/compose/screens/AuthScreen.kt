@@ -1,19 +1,21 @@
 package com.vibe.ui.compose.screens
 
-import android.content.Context
-import android.telephony.TelephonyManager
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -26,6 +28,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,29 +40,13 @@ import androidx.compose.ui.unit.dp
 import com.vibe.ui.compose.components.VibeButton
 import com.vibe.ui.compose.components.VibeButtonSize
 import com.vibe.ui.compose.components.VibeInput
+import com.vibe.ui.i18n.VibeI18n
+import com.vibe.ui.network.ServerConfig
+import com.vibe.ui.network.SupabaseAuthManager
+import com.vibe.ui.BuildConfig
+import kotlinx.coroutines.launch
 
-private fun detectCountryCode(context: Context): String {
-    val tm = context.getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager ?: return "+7 "
-    val iso = tm.simCountryIso?.uppercase() ?: tm.networkCountryIso?.uppercase() ?: return "+7 "
-    return (COUNTRY_DIAL_CODES[iso] ?: "+7") + " "
-}
-
-private val COUNTRY_DIAL_CODES = mapOf(
-    "RU" to "+7", "KZ" to "+7", "UA" to "+380", "BY" to "+375",
-    "US" to "+1", "CA" to "+1", "GB" to "+44", "DE" to "+49",
-    "FR" to "+33", "IT" to "+39", "ES" to "+34", "TR" to "+90",
-    "CN" to "+86", "JP" to "+81", "KR" to "+82", "IN" to "+91",
-    "BR" to "+55", "AU" to "+61", "PL" to "+48", "CZ" to "+420",
-    "IL" to "+972", "SE" to "+46", "NO" to "+47", "FI" to "+358",
-    "DK" to "+45", "NL" to "+31", "BE" to "+32", "CH" to "+41",
-    "AT" to "+43", "PT" to "+351", "GR" to "+30", "IE" to "+353",
-    "NZ" to "+64", "SG" to "+65", "MY" to "+60", "TH" to "+66",
-    "VN" to "+84", "PH" to "+63", "ID" to "+62", "PK" to "+92",
-    "BD" to "+880", "EG" to "+20", "ZA" to "+27", "NG" to "+234",
-    "AZ" to "+994", "AM" to "+374", "GE" to "+995", "KG" to "+996",
-    "TJ" to "+992", "TM" to "+993", "UZ" to "+998", "MD" to "+373",
-    "LV" to "+371", "LT" to "+370", "EE" to "+372", "MN" to "+976",
-)
+private enum class AuthStep { LOGIN, REGISTER }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,18 +55,142 @@ fun AuthScreen(
     onComplete: () -> Unit
 ) {
     val context = LocalContext.current
-    var phoneNumber by remember { mutableStateOf(detectCountryCode(context)) }
-    var code by remember { mutableStateOf("") }
-    var showCodeInput by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    val serverConfig = remember { ServerConfig(context) }
+
+    var step by remember { mutableStateOf(AuthStep.LOGIN) }
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var firstName by remember { mutableStateOf("") }
+    var lastName by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
+    var loading by remember { mutableStateOf(false) }
+
+    val supabaseUrl = BuildConfig.SUPABASE_URL
+    val anonKey = BuildConfig.SUPABASE_ANON_KEY
+
+    fun doLogin() {
+        if (email.isBlank() || !email.contains("@")) {
+            error = VibeI18n.t("invalid_email")
+            return
+        }
+        if (password.length < 6) {
+            error = VibeI18n.t("password_short")
+            return
+        }
+        error = null
+        loading = true
+        scope.launch {
+            val result = SupabaseAuthManager.signIn(supabaseUrl, anonKey, email, password)
+            if (result.success && result.token != null) {
+                serverConfig.setAuthToken(result.token)
+                result.refreshToken?.let { serverConfig.setRefreshToken(it) }
+                result.userId?.let { serverConfig.setUserId(it) }
+                result.email?.let { serverConfig.setUsername(it) }
+                serverConfig.setAuthenticated(true)
+
+                // Ensure profile exists in Supabase
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    val existing = com.vibe.ui.network.SupabaseClient.getProfile(
+                        supabaseUrl, anonKey, result.token, result.userId ?: ""
+                    )
+                    if (existing == null) {
+                        val name = listOfNotNull(firstName.ifBlank { null }, lastName.ifBlank { null })
+                            .joinToString(" ").ifBlank { email }
+                        com.vibe.ui.network.SupabaseClient.createProfile(
+                            supabaseUrl, anonKey, result.token, name
+                        )
+                    }
+                }
+
+                // Generate E2E keys if not already registered
+                kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                    if (!com.vibe.ui.e2e.E2EEngine.isReady()) {
+                        com.vibe.ui.e2e.E2EEngine.generateUserKeys()
+                    }
+                }
+
+                loading = false
+                onComplete()
+            } else {
+                loading = false
+                error = result.error ?: VibeI18n.t("login_error")
+            }
+        }
+    }
+
+    fun doRegister() {
+        if (firstName.isBlank()) {
+            error = VibeI18n.t("enter_name")
+            return
+        }
+        if (email.isBlank() || !email.contains("@")) {
+            error = VibeI18n.t("invalid_email")
+            return
+        }
+        if (password.length < 6) {
+            error = VibeI18n.t("password_short")
+            return
+        }
+        error = null
+        loading = true
+        scope.launch {
+            val result = SupabaseAuthManager.signUp(supabaseUrl, anonKey, email, password)
+            if (result.success && result.token != null) {
+                serverConfig.setAuthToken(result.token)
+                result.refreshToken?.let { serverConfig.setRefreshToken(it) }
+                result.userId?.let { serverConfig.setUserId(it) }
+                val displayName = listOfNotNull(firstName.ifBlank { null }, lastName.ifBlank { null })
+                    .joinToString(" ").ifBlank { email }
+                serverConfig.setUsername(displayName)
+                serverConfig.setAuthenticated(true)
+
+                // Create profile in Supabase
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    com.vibe.ui.network.SupabaseClient.createProfile(
+                        supabaseUrl, anonKey, result.token, displayName
+                    )
+                }
+
+                // Generate E2E keys for new user
+                kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                    com.vibe.ui.e2e.E2EEngine.generateUserKeys()
+                }
+
+                loading = false
+                onComplete()
+            } else {
+                loading = false
+                error = result.error ?: VibeI18n.t("register_error")
+            }
+        }
+    }
+
+    val title = when (step) {
+        AuthStep.LOGIN -> VibeI18n.t("login_title")
+        AuthStep.REGISTER -> VibeI18n.t("create_account_title")
+    }
+
+    val subtitle = when (step) {
+        AuthStep.LOGIN -> VibeI18n.t("login_subtitle")
+        AuthStep.REGISTER -> VibeI18n.t("register_subtitle")
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Вход", fontWeight = FontWeight.Bold) },
+                title = { Text(title, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    IconButton(onClick = {
+                        when (step) {
+                            AuthStep.LOGIN -> onBack()
+                            AuthStep.REGISTER -> {
+                                step = AuthStep.LOGIN
+                                error = null
+                            }
+                        }
+                    }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -99,83 +210,137 @@ fun AuthScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Введите номер телефона",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = "Мы отправим код подтверждения",
+                text = subtitle,
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             Spacer(modifier = Modifier.height(32.dp))
 
+            AnimatedVisibility(visible = step == AuthStep.REGISTER) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .animateContentSize()
+                ) {
+                    VibeInput(
+                        value = firstName,
+                        onValueChange = { firstName = it; error = null },
+                        label = VibeI18n.t("first_name"),
+                        imeAction = ImeAction.Next,
+                        error = if (step == AuthStep.REGISTER) error else null,
+                        enabled = !loading,
+                        leadingIcon = {
+                            Icon(Icons.Default.Person, contentDescription = null,
+                                 tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    VibeInput(
+                        value = lastName,
+                        onValueChange = { lastName = it },
+                        label = VibeI18n.t("last_name_optional"),
+                        imeAction = ImeAction.Next,
+                        enabled = !loading,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+                }
+            }
+
             VibeInput(
-                value = phoneNumber,
-                onValueChange = { phoneNumber = it; error = null },
-                label = "Номер телефона",
-                placeholder = "+7 (999) 123-45-67",
-                keyboardType = KeyboardType.Phone,
-                imeAction = ImeAction.Done,
-                error = error,
+                value = email,
+                onValueChange = { email = it; error = null },
+                label = "Email",
+                placeholder = "user@example.com",
+                keyboardType = KeyboardType.Email,
+                imeAction = ImeAction.Next,
+                error = if (step == AuthStep.LOGIN) error else null,
+                enabled = !loading,
                 leadingIcon = {
-                    Icon(Icons.Default.Phone, contentDescription = null,
+                    Icon(Icons.Default.Email, contentDescription = null,
                          tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 },
                 modifier = Modifier.fillMaxWidth()
             )
 
-            AnimatedVisibility(visible = showCodeInput) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .animateContentSize()
-                        .padding(top = 16.dp)
-                ) {
-                    VibeInput(
-                        value = code,
-                        onValueChange = { code = it },
-                        label = "Код подтверждения",
-                        placeholder = "••••••",
-                        keyboardType = KeyboardType.NumberPassword,
-                        imeAction = ImeAction.Done,
-                        error = error,
-                        modifier = Modifier.fillMaxWidth()
-                    )
+            Spacer(modifier = Modifier.height(10.dp))
 
-                    Spacer(modifier = Modifier.height(12.dp))
+            VibeInput(
+                value = password,
+                onValueChange = { password = it; error = null },
+                label = VibeI18n.t("password"),
+                keyboardType = KeyboardType.Password,
+                imeAction = ImeAction.Done,
+                error = if (step == AuthStep.LOGIN && error != null) error else null,
+                enabled = !loading,
+                isPassword = true,
+                leadingIcon = {
+                    Icon(Icons.Default.Lock, contentDescription = null,
+                         tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                },
+                modifier = Modifier.fillMaxWidth()
+            )
 
-                    Text(
-                        text = "Отправить код повторно через 30 сек",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+            if (step == AuthStep.LOGIN && error != null) {
+                Spacer(modifier = Modifier.height(4.dp))
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             VibeButton(
-                text = if (showCodeInput) "Подтвердить" else "Получить код",
+                text = when {
+                    loading && step == AuthStep.LOGIN -> VibeI18n.t("login_loading")
+                    loading && step == AuthStep.REGISTER -> VibeI18n.t("register_loading")
+                    step == AuthStep.LOGIN -> VibeI18n.t("login")
+                    else -> VibeI18n.t("register")
+                },
                 onClick = {
-                    if (!showCodeInput) {
-                        if (phoneNumber.isBlank()) {
-                            error = "Введите номер телефона"
-                        } else {
-                            showCodeInput = true
-                        }
-                    } else {
-                        onComplete()
+                    when (step) {
+                        AuthStep.LOGIN -> doLogin()
+                        AuthStep.REGISTER -> doRegister()
                     }
                 },
                 fullWidth = true,
-                size = VibeButtonSize.LARGE
+                size = VibeButtonSize.LARGE,
+                enabled = !loading
             )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = when (step) {
+                        AuthStep.LOGIN -> VibeI18n.t("no_account")
+                        AuthStep.REGISTER -> VibeI18n.t("has_account")
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = when (step) {
+                        AuthStep.LOGIN -> VibeI18n.t("register")
+                        AuthStep.REGISTER -> VibeI18n.t("login")
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.clickable(enabled = !loading) {
+                        step = when (step) {
+                            AuthStep.LOGIN -> AuthStep.REGISTER
+                            AuthStep.REGISTER -> AuthStep.LOGIN
+                        }
+                        error = null
+                    }
+                )
+            }
         }
     }
 }

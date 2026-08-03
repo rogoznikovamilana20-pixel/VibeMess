@@ -1,8 +1,12 @@
 package com.vibe.ui.compose.screens
 
 import android.content.Context
+import android.content.pm.PackageManager
 import android.media.AudioManager
+import android.os.Build
 import android.view.ViewGroup
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -90,46 +94,99 @@ fun CallScreen(
     var remoteFingerprint by remember { mutableStateOf("") }
     var verificationCode by remember { mutableStateOf("") }
 
+    var hasAudioPermission by remember {
+        mutableStateOf(
+            Build.VERSION.SDK_INT < Build.VERSION_CODES.M ||
+                androidx.core.content.ContextCompat.checkSelfPermission(
+                    context, android.Manifest.permission.RECORD_AUDIO
+                ) == PackageManager.PERMISSION_GRANTED
+        )
+    }
+    var hasCameraPermission by remember {
+        mutableStateOf(
+            Build.VERSION.SDK_INT < Build.VERSION_CODES.M ||
+                androidx.core.content.ContextCompat.checkSelfPermission(
+                    context, android.Manifest.permission.CAMERA
+                ) == PackageManager.PERMISSION_GRANTED
+        )
+    }
+    var cameraPending by remember { mutableStateOf(false) }
+
     val callManager = remember {
-        CallManager(context, userId).apply {
-            initialize(object : CallManager.Callback {
-                override fun onCallStateChanged(state: CallManager.CallState) {
-                    isCallActive = state == CallManager.CallState.CONNECTED
-                    if (state == CallManager.CallState.CONNECTED) {
-                        isRinging = false
+        try {
+            CallManager(context, userId).apply {
+                initialize(object : CallManager.Callback {
+                    override fun onCallStateChanged(state: CallManager.CallState) {
+                        isCallActive = state == CallManager.CallState.CONNECTED
+                        if (state == CallManager.CallState.CONNECTED) {
+                            isRinging = false
+                        }
                     }
-                }
 
-                override fun onRemoteVideoTrack(track: VideoTrack?) {
-                    remoteVideoTrack = track
-                }
+                    override fun onRemoteVideoTrack(track: VideoTrack?) {
+                        remoteVideoTrack = track
+                    }
 
-                override fun onIncomingCall(callerId: String, roomId: String) {
-                    currentRoomId = roomId
-                    isRinging = true
-                }
+                    override fun onIncomingCall(callerId: String, roomId: String) {
+                        currentRoomId = roomId
+                        isRinging = true
+                    }
 
-                override fun onE2eeStatusChanged(verified: Boolean, localFp: String, remoteFp: String, safetyNumber: String) {
-                    e2eeVerified = verified
-                    localFingerprint = localFp
-                    remoteFingerprint = remoteFp
-                    verificationCode = safetyNumber
-                }
-            })
+                    override fun onE2eeStatusChanged(verified: Boolean, localFp: String, remoteFp: String, safetyNumber: String) {
+                        e2eeVerified = verified
+                        localFingerprint = localFp
+                        remoteFingerprint = remoteFp
+                        verificationCode = safetyNumber
+                    }
+                })
+            }
+        } catch (e: Exception) {
+            com.vibe.common.logging.VibeLogger.e("CallScreen", "CallManager init failed", e)
+            null
+        }
+    }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { result ->
+        hasAudioPermission = result[android.Manifest.permission.RECORD_AUDIO] ?: hasAudioPermission
+        hasCameraPermission = result[android.Manifest.permission.CAMERA] ?: hasCameraPermission
+        if (cameraPending && hasCameraPermission) {
+            cameraPending = false
+            callManager?.toggleVideo(true)
+        }
+    }
+
+    suspend fun fetchTurnCredentials() {
+        com.vibe.ui.network.VibeHttpClient(
+            com.vibe.ui.network.ServerConfig(context)
+        ).getTurnCredentials()?.let { creds ->
+            creds.urls.firstOrNull()?.let { url ->
+                callManager?.addTurnCredentials(url, creds.username, creds.credential)
+            }
         }
     }
 
     // Start outgoing call
-    LaunchedEffect(contactUserId) {
-        if (contactUserId != null && incomingRoomId == null) {
-            currentRoomId = callManager.callUser(contactUserId)
+    LaunchedEffect(contactUserId, hasAudioPermission, hasCameraPermission) {
+        if (contactUserId != null && incomingRoomId == null && currentRoomId.isEmpty()) {
+            val needVideoPerm = isVideoCall && !hasCameraPermission
+            if (hasAudioPermission && !needVideoPerm) {
+                fetchTurnCredentials()
+                currentRoomId = callManager?.callUser(contactUserId) ?: ""
+            } else {
+                val perms = mutableListOf(android.Manifest.permission.RECORD_AUDIO)
+                if (isVideoCall) perms.add(android.Manifest.permission.CAMERA)
+                permissionLauncher.launch(perms.toTypedArray())
+            }
         }
     }
 
     // Connect to incoming call room for SDP exchange
-    LaunchedEffect(currentRoomId) {
-        if (incomingRoomId != null && currentRoomId.isNotEmpty()) {
-            callManager.acceptCall(currentRoomId, contactUserId ?: "")
+    LaunchedEffect(currentRoomId, hasAudioPermission) {
+        if (incomingRoomId != null && currentRoomId.isNotEmpty() && hasAudioPermission) {
+            fetchTurnCredentials()
+            callManager?.acceptCall(currentRoomId, contactUserId ?: "")
         }
     }
 
@@ -140,7 +197,7 @@ fun CallScreen(
     }
 
     DisposableEffect(Unit) {
-        onDispose { callManager.endCall() }
+        onDispose { callManager?.endCall() }
     }
 
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
@@ -281,7 +338,7 @@ fun CallScreen(
                     icon = Icons.Default.Call,
                     label = "Ответить",
                     onClick = {
-                        callManager.acceptCall(currentRoomId, contactUserId ?: "")
+                        callManager?.acceptCall(currentRoomId, contactUserId ?: "")
                         isRinging = false
                     }
                 )
@@ -292,7 +349,7 @@ fun CallScreen(
                     label = "Отклонить",
                     isEndCall = true,
                     onClick = {
-                        callManager.endCall()
+                        callManager?.endCall()
                         onEndCall()
                     }
                 )
@@ -304,7 +361,7 @@ fun CallScreen(
                     isActive = isMuted,
                     onClick = {
                         isMuted = !isMuted
-                        callManager.toggleMute(isMuted)
+                        callManager?.toggleMute(isMuted)
                     }
                 )
 
@@ -315,9 +372,9 @@ fun CallScreen(
                     isActive = isSpeakerOn,
                     onClick = {
                         isSpeakerOn = !isSpeakerOn
-                        val audio = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-                        audio.mode = if (isSpeakerOn) AudioManager.MODE_IN_COMMUNICATION else AudioManager.MODE_NORMAL
-                        audio.isSpeakerphoneOn = isSpeakerOn
+                        val audio = context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
+                        audio?.mode = if (isSpeakerOn) AudioManager.MODE_IN_COMMUNICATION else AudioManager.MODE_NORMAL
+                        audio?.isSpeakerphoneOn = isSpeakerOn
                     }
                 )
 
@@ -327,7 +384,7 @@ fun CallScreen(
                     label = "Завершить",
                     isEndCall = true,
                     onClick = {
-                        callManager.endCall()
+                        callManager?.endCall()
                         onEndCall()
                     }
                 )
@@ -340,14 +397,19 @@ fun CallScreen(
                         isActive = !isVideoEnabled,
                         onClick = {
                             isVideoEnabled = !isVideoEnabled
-                            callManager.toggleVideo(isVideoEnabled)
+                            if (isVideoEnabled && !hasCameraPermission) {
+                                cameraPending = true
+                                permissionLauncher.launch(arrayOf(android.Manifest.permission.CAMERA))
+                            } else {
+                                callManager?.toggleVideo(isVideoEnabled)
+                            }
                         }
                     )
 
                     CallControlButton(
                         icon = Icons.Default.Cameraswitch,
                         label = "Камера",
-                        onClick = { callManager.switchCamera() }
+                        onClick = { callManager?.switchCamera() }
                     )
                 }
             } else {
@@ -357,7 +419,7 @@ fun CallScreen(
                     label = "Отмена",
                     isEndCall = true,
                     onClick = {
-                        callManager.endCall()
+                        callManager?.endCall()
                         onEndCall()
                     }
                 )
@@ -393,11 +455,11 @@ fun CallScreen(
                         Spacer(modifier = Modifier.height(12.dp))
                         Button(
                             onClick = {
-                                callManager.confirmE2ee()
+                                callManager?.confirmE2ee()
                                 showE2eeDialog = false
                             },
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFF8D2BFA)
+                                containerColor = Color(0xFF8B5CF6)
                             )
                         ) {
                             Text("Верифицировать")
