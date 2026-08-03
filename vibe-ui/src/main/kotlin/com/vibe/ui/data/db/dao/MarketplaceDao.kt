@@ -1,5 +1,6 @@
 package com.vibe.ui.data.db.dao
 
+import androidx.paging.PagingSource
 import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
@@ -17,8 +18,14 @@ interface MarketplaceDao {
     @Query("SELECT * FROM marketplace_listings WHERE isActive = 1 ORDER BY createdAt DESC")
     fun getActiveListings(): Flow<List<MarketplaceListingEntity>>
 
+    @Query("SELECT * FROM marketplace_listings WHERE isActive = 1 ORDER BY createdAt DESC")
+    fun getActiveListingsPaging(): PagingSource<Int, MarketplaceListingEntity>
+
     @Query("SELECT * FROM marketplace_listings WHERE category = :category AND isActive = 1 ORDER BY createdAt DESC")
     fun getListingsByCategory(category: String): Flow<List<MarketplaceListingEntity>>
+
+    @Query("SELECT * FROM marketplace_listings WHERE category = :category AND isActive = 1 ORDER BY createdAt DESC")
+    fun getListingsByCategoryPaging(category: String): PagingSource<Int, MarketplaceListingEntity>
 
     @Insert
     suspend fun insertListing(listing: MarketplaceListingEntity)

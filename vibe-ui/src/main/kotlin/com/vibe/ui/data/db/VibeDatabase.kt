@@ -312,6 +312,10 @@ internal val MIGRATION_10_11 = Migration(10, 11) { db ->
     db.execSQL("ALTER TABLE `chats` ADD COLUMN `avatarPath` TEXT")
 }
 
+internal val MIGRATION_11_12 = Migration(11, 12) { db ->
+    db.execSQL("ALTER TABLE `timeline_posts` ADD COLUMN `mediaType` TEXT NOT NULL DEFAULT 'text'")
+}
+
 @Database(
     entities = [
         AccountEntity::class,
@@ -328,7 +332,7 @@ internal val MIGRATION_10_11 = Migration(10, 11) { db ->
         PayoutRequestEntity::class,
         MeshMessageEntity::class
     ],
-    version = 11,
+    version = 12,
     exportSchema = true
 )
 abstract class VibeDatabase : RoomDatabase() {
@@ -361,11 +365,10 @@ abstract class VibeDatabase : RoomDatabase() {
                     .addMigrations(
                         MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5,
                         MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9,
-                        MIGRATION_9_10, MIGRATION_10_11
+                        MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12
                     )
-                    // Never crash the app on a schema mismatch — the DB is a cache
-                    // that can be rebuilt. Vibe data lives in Telegram's storage.
-                    .fallbackToDestructiveMigration()
+                    // Only destructive on upgrade mismatch, not on downgrade
+                    .fallbackToDestructiveMigrationOnDowngrade()
                     .build()
                 INSTANCE = instance
                 instance

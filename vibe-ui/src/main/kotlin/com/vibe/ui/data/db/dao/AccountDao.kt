@@ -28,4 +28,7 @@ interface AccountDao {
 
     @Query("SELECT * FROM vibe_accounts ORDER BY createdAt DESC LIMIT 1")
     suspend fun getLatest(): AccountEntity?
+
+    @Query("DELETE FROM vibe_accounts")
+    suspend fun deleteAll()
 }
