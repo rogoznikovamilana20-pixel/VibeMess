@@ -1,9 +1,16 @@
 package com.vibe.ui.data.db.entity
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "vibe_accounts")
+@Entity(
+    tableName = "vibe_accounts",
+    indices = [
+        Index(value = ["email"], unique = true),
+        Index(value = ["username"], unique = true)
+    ]
+)
 data class AccountEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,

@@ -1,9 +1,13 @@
 package com.vibe.ui.data.db.entity
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "timeline_posts")
+@Entity(
+    tableName = "timeline_posts",
+    indices = [Index(value = ["timestamp"])]
+)
 data class TimelinePostEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val content: String,

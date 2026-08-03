@@ -316,6 +316,17 @@ internal val MIGRATION_11_12 = Migration(11, 12) { db ->
     db.execSQL("ALTER TABLE `timeline_posts` ADD COLUMN `mediaType` TEXT NOT NULL DEFAULT 'text'")
 }
 
+internal val MIGRATION_12_13 = Migration(12, 13) { db ->
+    db.execSQL("CREATE INDEX IF NOT EXISTS `index_messages_chatId_timestamp` ON `messages` (`chatId`, `timestamp`)")
+    db.execSQL("CREATE INDEX IF NOT EXISTS `index_chats_accountId_isPersonal_isPinned_lastMessageTime` ON `chats` (`accountId`, `isPersonal`, `isPinned`, `lastMessageTime`)")
+    db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_vibe_accounts_email` ON `vibe_accounts` (`email`)")
+    db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_vibe_accounts_username` ON `vibe_accounts` (`username`)")
+    db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_bots_username` ON `bots` (`username`)")
+    db.execSQL("CREATE INDEX IF NOT EXISTS `index_bot_messages_botId_timestamp` ON `bot_messages` (`botId`, `timestamp`)")
+    db.execSQL("CREATE INDEX IF NOT EXISTS `index_timeline_posts_timestamp` ON `timeline_posts` (`timestamp`)")
+    db.execSQL("CREATE INDEX IF NOT EXISTS `index_marketplace_listings_category_isActive_createdAt` ON `marketplace_listings` (`category`, `isActive`, `createdAt`)")
+}
+
 @Database(
     entities = [
         AccountEntity::class,
@@ -332,7 +343,7 @@ internal val MIGRATION_11_12 = Migration(11, 12) { db ->
         PayoutRequestEntity::class,
         MeshMessageEntity::class
     ],
-    version = 12,
+    version = 13,
     exportSchema = true
 )
 abstract class VibeDatabase : RoomDatabase() {
@@ -365,7 +376,7 @@ abstract class VibeDatabase : RoomDatabase() {
                     .addMigrations(
                         MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5,
                         MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9,
-                        MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12
+                        MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13
                     )
                     // Only destructive on upgrade mismatch, not on downgrade
                     .fallbackToDestructiveMigrationOnDowngrade()

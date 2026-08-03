@@ -157,16 +157,16 @@ fun SupabaseMainScreen(
                     )
 
                     val items = mutableListOf(
-                        Triple(Icons.Default.Person, "Профиль") { onOpenProfile() },
-                        Triple(Icons.Default.Group, "Контакты") { onOpenContacts() },
-                        Triple(Icons.Default.Call, "Звонки") { onOpenCalls() },
-                        Triple(Icons.Default.SmartToy, "Боты") { onOpenBots() },
-                        Triple(Icons.Default.Timeline, "Лента") { onOpenTimeline() },
-                        Triple(Icons.Default.Store, "Магазин") { onOpenMarketplace() },
-                        Triple(Icons.Default.Settings, "Настройки") { onOpenSettings() }
+                        Triple(Icons.Default.Person, VibeI18n.t("profile")) { onOpenProfile() },
+                        Triple(Icons.Default.Group, VibeI18n.t("contacts")) { onOpenContacts() },
+                        Triple(Icons.Default.Call, VibeI18n.t("calls")) { onOpenCalls() },
+                        Triple(Icons.Default.SmartToy, VibeI18n.t("bots")) { onOpenBots() },
+                        Triple(Icons.Default.Timeline, VibeI18n.t("feed")) { onOpenTimeline() },
+                        Triple(Icons.Default.Store, VibeI18n.t("marketplace")) { onOpenMarketplace() },
+                        Triple(Icons.Default.Settings, VibeI18n.t("settings")) { onOpenSettings() }
                     )
                     if (userRole == "admin" || userRole == "super_admin") {
-                        items.add(Triple(Icons.Default.Security, "Админ") { onOpenAdmin() })
+                        items.add(Triple(Icons.Default.Security, VibeI18n.t("admin")) { onOpenAdmin() })
                     }
 
                     items.forEach { (icon, title, action) ->
