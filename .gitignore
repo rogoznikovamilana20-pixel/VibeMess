@@ -21,6 +21,7 @@ out/
 *.jar
 !gradle/wrapper/gradle-wrapper.jar
 *.aar
+!TMessagesProj/libs/libgsaverification-client.aar
 *.war
 local.properties
 *.keystore
