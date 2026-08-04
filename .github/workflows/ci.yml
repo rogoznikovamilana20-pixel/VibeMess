@@ -151,6 +151,8 @@ jobs:
           if [ -n "${{ secrets.AI_API_KEY }}" ]; then
             echo "AI_API_KEY=${{ secrets.AI_API_KEY }}" >> local.properties
           fi
+      - name: Generate debug keystore
+        run: keytool -genkey -v -keystore ~/.android/debug.keystore -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname "CN=Android Debug,O=Android,C=US"
       - name: Build debug APK
         run: ./gradlew :TMessagesProj_App:assembleAfatDebug --stacktrace
       - name: Upload APK
